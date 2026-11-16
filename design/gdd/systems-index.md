@@ -91,7 +91,7 @@ This index was written before the game's five pillars were defined (they are now
 | 14 | Pond & Area Travel | Progression | Alpha | Not Started | — | Fishing Log & Unc; Economy; Scene Flow & Loading |
 | 15 | Lost Legends | Progression | Alpha | Not Started | — | Strains & Unlock Chain; Fishing Log & Unc; Pond & Area Travel; Bite Timing |
 | 16 | Fishing Log & Unc | Progression | MVP | Not Started | — | Fish Database & Spawn Tables |
-| 17 | Fish Database & Spawn Tables | Economy | MVP | Designed | design/gdd/fish-database-spawn-tables.md | — |
+| 17 | Fish Database & Spawn Tables | Economy | MVP | In Review | design/gdd/fish-database-spawn-tables.md | — |
 | 18 | Gear & Item Database (inferred) | Economy | MVP | Not Started | — | — |
 | 19 | Inventory & Storage | Economy | MVP | Not Started | — | Gear & Item Database; Fish Database & Spawn Tables |
 | 20 | Economy | Economy | MVP | Not Started | — | Fish Database & Spawn Tables; Gear & Item Database; Strains & Unlock Chain |
@@ -264,7 +264,7 @@ Chill Meter & Smoking (14) and Hunger, Munchies & Drunk (15) are designed back t
 | Design docs started | 1 |
 | Design docs reviewed | 0 |
 | Design docs approved | 0 |
-| MVP systems designed | 1/19 (Fish Database: designed, pending independent review) |
+| MVP systems designed | 1/19 (Fish Database: In Review, revised after the 2026-11-16 design review, awaiting re-review) |
 | Vertical Slice systems designed | 0/6 |
 
 ---

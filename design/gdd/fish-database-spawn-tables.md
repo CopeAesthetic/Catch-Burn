@@ -1,12 +1,12 @@
 # Fish Database & Spawn Tables
 
-> **Status**: Designed (pending review)
+> **Status**: In Review (revised after the 2026-11-16 design review, awaiting re-review)
 > **Author**: owner + design-system skill
 > **Last Updated**: 2026-11-16
 > **Last Verified**: 2026-11-16
 > **Implements Pillar**: Pillar 3 (Real Fish, Real Places, Pun Names); Pillar 1 (The High Is the Progression)
 > **Creative Director Review (CD-GDD-ALIGN)**: SKIPPED 2026-11-16 — lean mode
-> **Independent review**: not done. Run `/design-review design/gdd/fish-database-spawn-tables.md` in a fresh session.
+> **Independent review**: 2026-11-16, lean, NEEDS REVISION (3 blockers, since fixed: random source as an input, catch result reports the flag spent, load checks and knob ranges). Recommended items fixed: ACs for tier 2, tier 4 and edge cases (AC-31 to AC-37). Still open: co-op inputs, "three states" wording, Tuning Knobs table, Straight Fire versus Lost Legends wording, systems-index dependency rows.
 
 ## Summary
 
@@ -41,8 +41,11 @@ It is a data-and-rules system. It holds no per-player state and draws nothing on
 1. Every pond has exactly 10 entries: 3 Common, 2 Uncommon, 2 Rare, 1 Epic, 1 Legendary, 1 Lost Legend.
 2. A species appears at most once per pond.
 3. Every entry's weight range has a minimum above 0 and a maximum above its minimum.
-4. The data is checked against rules 1–3 when it loads. A pond that breaks one is reported by name and the game does not start with it; it is never silently repaired.
+4. The data is checked against rules 1–3 and 6–8 when it loads. Anything that breaks one is reported by name (the pond, entry, tier or knob) and the game does not start with it; it is never silently repaired.
 5. No fish, junk item, weight or rarity is written in code. All of it is data (coding standard: gameplay values are data-driven).
+6. Every rarity a tier opens has a `base_weight` of at least 1 for that tier (Formula 1). A tier with a 0 or missing weight for an opened rarity fails the check, naming the tier and rarity.
+7. The shared junk list holds at least one item, so no pond's junk pool is ever empty.
+8. Every tuning knob is inside its safe range (Formulas 1–4): `state_bonus` 0.05–1.0, `new_entry_bias` 1–5, `lure_bias_cap` 1–4, `junk_chance` 0–0.8, `weight_skew` 1–3, `trophy_band` 0.01–0.20. A knob outside its range fails the check, naming the knob. (Owner decision 2026-11-16: refuse to load, not clamp.) The caller-supplied inputs (tier, Chill state, lure bias) are not knobs: they are clamped at run time, as the Edge Cases say.
 
 **How a cast becomes a catch**
 
@@ -53,7 +56,8 @@ The system is asked for a catch by Bite Timing at the moment a bite happens. It 
 - the **Chill state**, 1 to 4 (Chill, High, Stoned, Zonked); YAK LOCKED counts as 4;
 - which of the pond's entries are **already logged** (from the Fishing Log);
 - any **lure bias** from equipped gear;
-- two flags other systems may raise: **Lost Legend due** and **YAK LOCK bonus due**.
+- two flags other systems may raise: **Lost Legend due** and **YAK LOCK bonus due**;
+- a **random source**, passed in with the request (dependency injection, per the coding standards). The system never creates its own dice. The game passes the live one and a test passes a fixed-seed one, which is what makes the "seeded" acceptance criteria repeatable.
 
 It answers in this order, stopping at the first that applies:
 
@@ -77,7 +81,7 @@ Then, for a fish:
 6. **Roll the weight** inside the entry's range, skewed toward the small end.
 7. **Check for a trophy** (owner decisions 2026-11-16): a catch whose weight lands in the top `trophy_band` of its range is a trophy and is flagged. There is no separate trophy roll, so a trophy is always among the heaviest of its kind.
 
-The answer is a **catch result**: fish or junk, which entry or item, its rarity, its weight, how far up its range that weight sits (0 to 1), and whether it is a trophy. This system does not decide what it is worth, how hard it is to land, or whether it is new to the log.
+The answer is a **catch result**: fish or junk, which entry or item, its rarity, its weight, how far up its range that weight sits (0 to 1), whether it is a trophy, and **which flag it spent**: Lost Legend due, YAK LOCK bonus due, or none. A flag that was raised but not spent (the YAK LOCK bonus when a Lost Legend takes the cast) is reported as not spent, so the system that owns the flag knows whether to lower it. This system does not decide what it is worth, how hard it is to land, or whether it is new to the log.
 
 **What never changes which fish bites**
 
@@ -196,7 +200,7 @@ The junk_roll formula is defined as:
 
 **Example:** `junk_chance` 0.4, draw 0.31 → junk. Draw 0.62 → a Common.
 
-**Boundaries checked:** at 1.0 a sober player with no weed and no cash could never catch anything worth selling and could not buy their way out. The cap is 0.8.
+**Boundaries checked:** at 1.0 a sober player with no weed and no cash could never catch anything worth selling and could not buy their way out. The cap is 0.8, and a data file above it fails to load (rule 8).
 
 ### 4. Weight and trophies
 
@@ -238,8 +242,8 @@ The catch_weight formula is defined as:
 - **If the equipped lure's tag matches no entry of the chosen rarity**: the lure has no effect on that cast.
 - **If a lure bias arrives below 1 or above `lure_bias_cap`**: it is clamped to that range.
 - **If the player is Sober and not all three Commons are logged**: junk never bites, whatever `junk_chance` is.
-- **If `junk_chance` is set above 0.8**: it is treated as 0.8.
-- **If a pond's junk pool is empty**: the data check fails at load. The shared list must hold at least one item.
+- **If `junk_chance` is set above 0.8 in the data file**: the data check fails at load and names the knob (rule 8). The 0.8 ceiling is a limit on the data, not a clamp applied at run time.
+- **If a pond's junk pool is empty**: the data check fails at load (rule 7). The shared list must hold at least one item.
 - **If the catch is a Lost Legend**: a weight is rolled, but it is never flagged a trophy. Lost Legends are photographed and released, so a trophy bonus would mean nothing.
 - **If the catch is junk**: it has no weight, no weight fraction and no trophy flag.
 - **If two players' bites resolve in the same step in co-op**: the host resolves them in order of bite time, and by player slot number if the times are equal. The rolls are independent.
@@ -348,7 +352,7 @@ Checked against the QA lens (coverage of every core rule and formula, a measurab
 
 - **AC-10** — **GIVEN** tier 0, none of the pond's Commons logged, and `junk_chance` 0.4, **WHEN** 10,000 catches are requested, **THEN** none is junk and every one is a Common of that pond.
 - **AC-11** — **GIVEN** tier 0, all three Commons logged, and `junk_chance` 0.4, **WHEN** 10,000 catches are requested, **THEN** between 38% and 42% are junk and the rest are Commons of that pond.
-- **AC-12** — **GIVEN** the same setup with `junk_chance` set to 1.0, **WHEN** 10,000 catches are requested, **THEN** between 78% and 82% are junk. (The 0.8 cap.)
+- **AC-12** — **GIVEN** the same setup with `junk_chance` set to 0.8 (the ceiling), **WHEN** 10,000 catches are requested, **THEN** between 78% and 82% are junk. (A `junk_chance` above 0.8 fails to load: AC-35.)
 - **AC-13** — **GIVEN** a North East pond, **WHEN** 10,000 junk catches are produced, **THEN** every item is from the shared list or the North East list, and no item from another region appears.
 
 **What each tier opens** — automated, seeded
@@ -379,12 +383,22 @@ Checked against the QA lens (coverage of every core rule and formula, a measurab
 
 **Repeatability and co-op**
 
-- **AC-28** — automated — **GIVEN** the same seed and the same sequence of requests, **WHEN** the sequence is run twice, **THEN** the two lists of catch results are identical.
+- **AC-28** — automated — **GIVEN** two random sources built from the same seed and the same sequence of requests, **WHEN** the sequence is run once with each, **THEN** the two lists of catch results are identical.
 - **AC-29** — integration, **cannot be run until Multiplayer exists** — **GIVEN** a two-player session, **WHEN** a guest's line gets a bite, **THEN** the entry and weight shown on the guest's screen equal the host's roll.
 
 **Across systems**
 
 - **AC-30** — integration, retained screenshot — **GIVEN** a sober player at Lil' Puffin' Pond, **WHEN** a fish is landed, **THEN** the catch banner shows the same name, rarity and weight as the catch result. Cannot be run until Bite Timing, Reel-in Needle and the HUD exist.
+
+**Added after the 2026-11-16 design review**
+
+- **AC-31** — automated, seeded — **GIVEN** tier 2, **WHEN** 100,000 catches are requested at Chill state 1, **THEN** Rare is between 29% and 31%; and at Chill state 4, Rare is between 44% and 46%.
+- **AC-32** — automated, seeded — **GIVEN** tier 4, **WHEN** 100,000 catches are requested at Chill state 1, **THEN** Legendary is between 17% and 19%; and at Chill state 4, Legendary is between 20.6% and 22.6%, Epic between 25.4% and 27.4% and Rare between 29% and 31%.
+- **AC-33** — automated, seeded — **GIVEN** a request with tier −1, **WHEN** 10,000 catches are requested, **THEN** every one is a Common or junk, as for tier 0; and **GIVEN** tier 9 at Chill state 1, **THEN** Legendary is between 17% and 19%, as for tier 4.
+- **AC-34** — integration, **cannot be run until Multiplayer exists** — **GIVEN** two guests' bites resolve at the same instant, **WHEN** the host resolves them, **THEN** the lower player slot's catch is rolled first and each catch equals the one produced by resolving the two requests one after the other with the same random source.
+- **AC-35** — automated — **GIVEN** test data in which exactly one knob is out of range (`state_bonus` 0.01, `new_entry_bias` 0.5, `lure_bias_cap` 5, `junk_chance` 1.0, `weight_skew` 0.5 or `trophy_band` 0.5), **WHEN** it loads, **THEN** the state is Failed and the report names that knob.
+- **AC-36** — automated — **GIVEN** test data in which a rarity that a tier opens has `base_weight` 0 or none, **WHEN** it loads, **THEN** the state is Failed and the report names the tier and the rarity.
+- **AC-37** — automated, seeded — **GIVEN** YAK LOCK bonus due is raised and no Lost Legend is due, **WHEN** one catch is requested, **THEN** the catch result reports the YAK LOCK bonus as spent; and **GIVEN** neither flag, **THEN** it reports no flag spent.
 
 **Not acceptance criteria: playtest questions**
 
