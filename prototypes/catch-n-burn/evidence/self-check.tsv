@@ -1,0 +1,40 @@
+time	2026-11-15 23:59:03
+keep	lines	0	pinned	0
+briefword	3D	unlisted	no shot at evidence/play.png
+briefword	but once you	unlisted
+briefword	that	unlisted
+briefword	first-person	unlisted
+checklist	L1	unlisted	-	Look: PS1-style low-poly 3D at a low internal resolution scaled up with hard pixels, vertex wobble, ordered dithering and distance fog. Pine-green bank, blue-grey misty water, warm amber sun tint that shifts through the day; chunky early-2000s HUD. Signature detail: tree shadows sliding across the water as the sun moves. Every figure drawn, no emoji, no plain circles.	
+checklist	L2	unlisted	-	References: Rapala Pro Bass Fishing (the "TV broadcast" catch banner), BioShock 2 (the needle gauge).	
+checklist	L3	unlisted	-	View: 3D · Camera: first person from the kayak seat.	
+checklist	F1	unlisted	-	Paddle a small 3D pond with a dock	
+checklist	F2	unlisted	-	Sun crosses the sky; pines cast shade; shade bites faster	
+checklist	F3	unlisted	-	Power cast, and a mash-to-free tangle on the bank	
+checklist	F4	unlisted	-	FISH ON, 1.5 s hook-set, needle reel-in, red-to-green text, rainbow flash, broadcast banner	
+checklist	F5	unlisted	-	The pond's 10 fish gated by strain tier, plus junk and the "go smoke somethin'" text	
+checklist	F6	unlisted	-	F to smoke: Chill Meter states, vibrance, YAK LOCKED and its bonus cast	
+checklist	F7	unlisted	-	Hunger → Munchies, and snacks to eat	
+checklist	F8	unlisted	-	Debug toggle for the Silver Trout and Silver Smoke; every tuning value in `config.js`	
+checklist	S1	unlisted	-	cast & tangle · in the slice	
+checklist	S2	unlisted	-	bite timing · in the slice	
+checklist	S3	unlisted	-	needle reel-in · in the slice	
+checklist	S4	unlisted	-	paddling · in the slice	
+checklist	S5	unlisted	-	day/night & shade sweet spots · in the slice	
+checklist	S6	unlisted	-	smoking & Chill Meter · in the slice	
+checklist	S7	unlisted	-	Hunger → Munchies · in the slice	
+checklist	S8	unlisted	-	strain unlock chain · in the slice	
+checklist	S9	unlisted	-	The Drop Box & sleeping · thin stand-in	
+checklist	S10	unlisted	-	Flip Phone (The Guy, Jimmy's Quick Sell, Unc's log) · thin stand-in	
+checklist	S11	unlisted	-	shack Map & pond pictures · thin stand-in	
+checklist	S12	unlisted	-	fish and strain prices · thin stand-in *(guessed)*	
+checklist	M1	unlisted	-	You start in the kayak at the dock at sunrise.	
+checklist	M2	unlisted	-	Paddle toward a patch of shade under the pines, hold Space, and cast.	
+checklist	M3	unlisted	-	A cast on open water bites in about 5 s; in shade, about 2 s.	
+checklist	M4	unlisted	-	"FISH ON" flashes red; hit Space inside 1.5 s, then stop the needle on green three times as the text turns green.	
+checklist	M5	unlisted	-	Rainbow flash, broadcast banner: your first Pumpkinseed.	
+checklist	C1	unlisted	-	Commons are easy.	
+checklist	C2	unlisted	-	The first real trouble comes around minutes 3–5: your first Reggie opens the Uncommons, whose needle is faster with smaller zones, and each hit pushes Hunger toward Munchies, which locks fishing and smoking until you eat.	
+checklist	C3	unlisted	-	The Legendary takes a few tries.	
+checklist	C4	unlisted	-	A loss costs the fish and the weed you burned to reach it.	
+checklist	C5	unlisted	-	*(guessed: all needle numbers per rarity)*	
+not_assessed	scripted run	the game loads modules (served 3D): a page opened from disk cannot run it

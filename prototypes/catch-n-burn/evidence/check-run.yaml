@@ -1,0 +1,174 @@
+# The one-shot's small check (check-run/1).
+# Written by one-shot-check.sh --record: the results are /prototype's reading of
+# evidence/self-check.tsv; never edited by hand.
+kind: check-run/1
+engine: web
+browser: "unknown"
+time: "2026-11-15 23:59:03"
+checks:
+  - id: boots
+    result: not_run
+    mark: not assessed
+    why: "served 3D game, the scripted run cannot open modules from disk; page-shot opened it with 0 uncaught errors"
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: shot
+    result: not_run
+    mark: not assessed
+    why: "evidence/play.png was taken with page-shot --file-access and looked at, not by the check's own run"
+    evidence:
+  - id: outlines
+    result: pass
+    evidence:
+      - "evidence/figures.png"
+  - id: brief-words
+    result: pass
+    evidence:
+      - "evidence/brief-words.tsv"
+  - id: emoji
+    result: pass
+    evidence:
+      - "evidence/self-check.tsv"
+  - id: nearest-game
+    result: pass
+    evidence:
+      - "evidence/nearest-game.txt"
+brief_checklist:
+  - id: L1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Look: PS1-style low-poly 3D at a low internal resolution scaled up with hard pixels, vertex wobble, ordered dithering and distance fog. Pine-green bank, blue-grey misty water, warm amber sun tint that shifts through the day; chunky early-2000s HUD. Signature detail: tree shadows sliding across the water as the sun moves. Every figure drawn, no emoji, no plain circles."
+  - id: L2
+    result: pass
+    evidence: "index.html:824"
+    item: "References: Rapala Pro Bass Fishing (the \"TV broadcast\" catch banner), BioShock 2 (the needle gauge)."
+  - id: L3
+    result: pass
+    evidence: "evidence/play.png"
+    item: "View: 3D · Camera: first person from the kayak seat."
+  - id: F1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Paddle a small 3D pond with a dock"
+  - id: F2
+    result: pass
+    evidence: "index.html:177"
+    item: "Sun crosses the sky; pines cast shade; shade bites faster"
+  - id: F3
+    result: pass
+    evidence: "index.html:459"
+    item: "Power cast, and a mash-to-free tangle on the bank"
+  - id: F4
+    result: pass
+    evidence: "index.html:355"
+    item: "FISH ON, 1.5 s hook-set, needle reel-in, red-to-green text, rainbow flash, broadcast banner"
+  - id: F5
+    result: pass
+    evidence: "index.html:420"
+    item: "The pond's 10 fish gated by strain tier, plus junk and the \"go smoke somethin'\" text"
+  - id: F6
+    result: pass
+    evidence: "index.html:513"
+    item: "F to smoke: Chill Meter states, vibrance, YAK LOCKED and its bonus cast"
+  - id: F7
+    result: pass
+    evidence: "index.html:537"
+    item: "Hunger → Munchies, and snacks to eat"
+  - id: F8
+    result: pass
+    evidence: "index.html:956"
+    item: "Debug toggle for the Silver Trout and Silver Smoke; every tuning value in `config.js`"
+  - id: S1
+    result: pass
+    evidence: "index.html:455"
+    item: "cast & tangle · in the slice"
+  - id: S2
+    result: pass
+    evidence: "index.html:475"
+    item: "bite timing · in the slice"
+  - id: S3
+    result: pass
+    evidence: "index.html:503"
+    item: "needle reel-in · in the slice"
+  - id: S4
+    result: pass
+    evidence: "index.html:550"
+    item: "paddling · in the slice"
+  - id: S5
+    result: pass
+    evidence: "index.html:184"
+    item: "day/night & shade sweet spots · in the slice"
+  - id: S6
+    result: pass
+    evidence: "index.html:513"
+    item: "smoking & Chill Meter · in the slice"
+  - id: S7
+    result: pass
+    evidence: "index.html:537"
+    item: "Hunger → Munchies · in the slice"
+  - id: S8
+    result: pass
+    evidence: "index.html:397"
+    item: "strain unlock chain · in the slice"
+  - id: S9
+    result: pass
+    evidence: "index.html:568"
+    item: "The Drop Box & sleeping · thin stand-in"
+  - id: S10
+    result: pass
+    evidence: "index.html:611"
+    item: "Flip Phone (The Guy, Jimmy's Quick Sell, Unc's log) · thin stand-in"
+  - id: S11
+    result: pass
+    evidence: "index.html:604"
+    item: "shack Map & pond pictures · thin stand-in"
+  - id: S12
+    result: pass
+    evidence: "config.js:87"
+    item: "fish and strain prices · thin stand-in *(guessed)*"
+  - id: M1
+    result: pass
+    evidence: "evidence/play.png"
+    item: "You start in the kayak at the dock at sunrise."
+  - id: M2
+    result: pass
+    evidence: "evidence/play.png"
+    item: "Paddle toward a patch of shade under the pines, hold Space, and cast."
+  - id: M3
+    result: pass
+    evidence: "index.html:474"
+    item: "A cast on open water bites in about 5 s; in shade, about 2 s."
+  - id: M4
+    result: pass
+    evidence: "index.html:792"
+    item: "\"FISH ON\" flashes red; hit Space inside 1.5 s, then stop the needle on green three times as the text turns green."
+  - id: M5
+    result: pass
+    evidence: "index.html:424"
+    item: "Rainbow flash, broadcast banner: your first Pumpkinseed."
+  - id: C1
+    result: not_run
+    mark: not assessed
+    why: "a feel line: only play can judge it; Commons use the slowest lure and widest zones in config.js"
+    item: "Commons are easy."
+  - id: C2
+    result: not_run
+    mark: not assessed
+    why: "timing in minutes needs a play session; Uncommon needle values are faster and smaller in config.js"
+    item: "The first real trouble comes around minutes 3–5: your first Reggie opens the Uncommons, whose needle is faster with smaller zones, and each hit pushes Hunger toward Munchies, which locks fishing and smoking until you eat."
+  - id: C3
+    result: not_run
+    mark: not assessed
+    why: "a feel line: only play can judge it; Legendary needs 8 pulls at speed 1.45"
+    item: "The Legendary takes a few tries."
+  - id: C4
+    result: pass
+    evidence: "index.html:497"
+    item: "A loss costs the fish and the weed you burned to reach it."
+  - id: C5
+    result: pass
+    evidence: "config.js:24"
+    item: "*(guessed: all needle numbers per rarity)*"
+not_assessed:
+  - what: "scripted run"
+    why: "the game loads modules (served 3D): a page opened from disk cannot run it"

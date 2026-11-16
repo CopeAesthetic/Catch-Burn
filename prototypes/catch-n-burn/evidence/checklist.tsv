@@ -1,0 +1,33 @@
+L1	pass	evidence/play.png	low-poly 3D drawn at 480x270 and scaled with hard pixels; dither and fog visible; vertex snap at index.html:207; tree shadows on the water at index.html:240
+L2	pass	index.html:824	broadcast banner drawBanner; pull gauge drawGauge at index.html:810
+L3	pass	evidence/play.png	3D, first person from the kayak seat, bow and rod in view
+F1	pass	evidence/play.png	pond, bank and dock built in build3D; paddling in movePlayer index.html:550
+F2	pass	index.html:177	sun crosses the sky (sunAt), shadows follow it in render, inShade picks bite_shade over bite_open at index.html:474
+F3	pass	index.html:459	hold Space charges, release casts; a cast on the bank goes to 'tangled' and Space presses free it (index.html:478)
+F4	pass	index.html:355	FISH ON with hookset_window, pull gauge, hsl red-to-green text and rainbow CAUGHT at index.html:792, banner in landCatch
+F5	pass	index.html:420	10 fish in data.js, tier opens rarities in pickCatch, junk and The Guy's text in landCatch index.html:444
+F6	pass	index.html:513	F smokes; chillIdx bands, vibrance() feeds the post pass, YAK LOCKED and yakBonus
+F7	pass	index.html:537	Hunger drains then flips to Munchies; smoking speeds it; applyFood and eat() index.html:528
+F8	pass	index.html:956	L on the pause screen toggles the Lost Legend debug; config.js debug_lost_legend; all tuning read through tune.*
+S1	pass	index.html:455	cast and tangle in tickCast
+S2	pass	index.html:475	bite wait: 5 s open, 2 s shade, +-1 s jitter, 1.5 s hook-set
+S3	pass	index.html:503	green +1, blue +3, miss -1, below 0 escapes
+S4	pass	index.html:550	W S paddle, A D turn, mouse look, bank stops the kayak
+S5	pass	index.html:184	day and night clock, shadows move with the sun, shade is the sweet spot
+S6	pass	index.html:513	Chill Meter with five states and YAK LOCKED
+S7	pass	index.html:537	one bar, two phases; maxed Munchies blocks cast and smoke (munchLocked)
+S8	pass	index.html:397	Commons -> Reggie -> Uncommons -> Home Grown -> Rares -> Top Shelf
+S9	pass	index.html:568	Drop Box takes the catch and gives cash and deliveries; sleep pays and delivers in tickSleep index.html:576
+S10	pass	index.html:611	Tab opens the phone: The Guy (guyMenu), Jimmy's Quick Sell (jimmyMenu), Unc's log (uncMenu)
+S11	pass	index.html:604	Map at the dock; after the Legendary the Pond 2 picture is for sale
+S12	pass	config.js:87	price_* per rarity, gram_* per tier, quick_sell 0.6
+M1	pass	evidence/play.png	starts in the kayak at the dock end, 7:00 AM
+M2	pass	evidence/play.png	the hint line says to paddle to the shade and hold Space; a tree shadow lies on the water by the start
+M3	pass	index.html:474	bite_open 5, bite_shade 2, bite_jitter 1
+M4	pass	index.html:792	FISH ON starts red; pulls_c is 3; hookset_window 1.5
+M5	pass	index.html:424	the first catch is a Pumpkinseed, with rainbow CAUGHT and the banner
+C1	not_assessed	-	a feel line: only play can judge it; Commons use the slowest lure and widest zones in config.js
+C2	not_assessed	-	timing in minutes needs a play session; Uncommon needle values are faster and smaller in config.js
+C3	not_assessed	-	a feel line: only play can judge it; Legendary needs 8 pulls at speed 1.45
+C4	pass	index.html:497	an escape drops the fish; grams already smoked are gone
+C5	pass	config.js:24	every needle number per rarity is a config.js value

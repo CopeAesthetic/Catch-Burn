@@ -1,0 +1,1008 @@
+<!doctype html>
+<!-- PROTOTYPE - NOT FOR PRODUCTION -->
+<!-- Question: Is cast, bite, needle, smoke fun on its own, and does Chill vs Munchies make smoking a decision? -->
+<!-- Date: 2026-11-15 -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Catch n' Burn</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #000; overflow: hidden; }
+  body { font-variant-numeric: tabular-nums; }
+  canvas { display: block; margin: 0 auto; }
+</style>
+<script type="importmap">{ "imports": { "three": "./vendor/three.module.js" } }</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script type="module">
+import * as THREE from 'three';
+
+// ---- Built to be checked ----------------------------------------------------------------
+const params = new URLSearchParams(location.search);
+const tune = new Proxy({}, { get: (_, k) => CONFIG[k].value }); // live: tune.speed is CONFIG.speed.value
+const STEP = 1 / 60;            // simulation step in seconds; motion is per second, never per frame
+const W = 1280, H = 720;        // logical size of the HUD; the 3D view is drawn low-res under it
+const PIXEL = false;
+const FONT = '"Trebuchet MS", Verdana, sans-serif';
+const HEAD = 'Impact, "Arial Black", sans-serif';
+const MONO = '"Courier New", Courier, monospace';
+const TITLE = 'Catch n\' Burn';
+const CONTROLS = [
+  'W S: paddle   A D: turn   Mouse: look (click the game first)',
+  'Hold SPACE: cast   SPACE: set the hook, stop the lure',
+  'F: smoke   Q: next strain   R: eat a snack',
+  'E: the dock   TAB: flip phone   P: pause   M: mute',
+];
+const clock = window.GAME_CLOCK || { now: () => performance.now() / 1000 }; // a check may inject one
+const CHEAP = params.get('render') === 'cheap'; // a headless shot or check: 3D draws cheap; players never see it
+let seed;
+function rng() { // mulberry32; every gameplay random call reads this
+  seed = (seed + 0x6D2B79F5) | 0;
+  let t = Math.imul(seed ^ (seed >>> 15), seed | 1);
+  t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+  return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+}
+const events = []; // window.game.events: anything the game wants a run to see
+
+// ---- Screen ---------------------------------------------------------------------------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+function fit() { // fills the window at any size and pixel ratio
+  const k = Math.min(innerWidth / W, innerHeight / H);
+  const s = PIXEL ? Math.max(1, Math.floor(k)) : k;
+  const r = PIXEL ? 1 : s * (devicePixelRatio || 1);
+  canvas.width = Math.round(W * r); canvas.height = Math.round(H * r);
+  canvas.style.width = Math.round(W * s) + 'px'; canvas.style.height = Math.round(H * s) + 'px';
+  canvas.style.marginTop = Math.max(0, Math.floor((innerHeight - H * s) / 2)) + 'px';
+  canvas.style.imageRendering = 'auto';
+  ctx.setTransform(r, 0, 0, r, 0, 0); ctx.imageSmoothingEnabled = true;
+}
+addEventListener('resize', fit); fit();
+function clear(c) { ctx.fillStyle = c; ctx.fillRect(0, 0, W, H); }
+function txt(s, x, y, size, c, align = 'center', font = FONT, bold = true, outline = 0) {
+  ctx.font = `${bold ? 'bold ' : ''}${size}px ${font}`; ctx.textAlign = align; ctx.textBaseline = 'middle';
+  if (outline) { ctx.lineWidth = outline; ctx.strokeStyle = '#0a0d12'; ctx.lineJoin = 'round'; ctx.strokeText(s, x, y); }
+  ctx.fillStyle = c; ctx.fillText(s, x, y);
+}
+function tw(s, size, font = FONT, bold = true) { ctx.font = `${bold ? 'bold ' : ''}${size}px ${font}`; return ctx.measureText(s).width; }
+function rr(x, y, w, h, r, fill) {
+  ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+}
+function panel(x, y, w, h, fill = '#141c26') { // the chunky early-2000s box: flat fill, hard bevel
+  ctx.fillStyle = '#05080c'; ctx.fillRect(x + 4, y + 4, w, h);
+  ctx.fillStyle = fill; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#e4dcb8'; ctx.fillRect(x, y, w, 3); ctx.fillRect(x, y, 3, h);
+  ctx.fillStyle = '#5b5646'; ctx.fillRect(x, y + h - 3, w, 3); ctx.fillRect(x + w - 3, y, 3, h);
+}
+function bar(x, y, w, h, frac, color, ticks = []) {
+  ctx.fillStyle = '#05080c'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = color; ctx.fillRect(x + 2, y + 2, Math.max(0, (w - 4) * Math.max(0, Math.min(1, frac))), h - 4);
+  ctx.fillStyle = '#e4dcb8'; for (const t of ticks) ctx.fillRect(x + 2 + (w - 4) * t - 1, y, 2, h);
+}
+function wrap(s, n) { // split into lines of at most n characters
+  const out = []; let line = '';
+  for (const w of String(s).split(' ')) { if ((line + ' ' + w).trim().length > n) { out.push(line); line = w; } else line = (line + ' ' + w).trim(); }
+  if (line) out.push(line); return out;
+}
+
+// ---- Input: keys by position (event.code), OS key repeat ignored ------------------------
+const down = new Set(), hit = new Set();
+const pressed = code => hit.has(code); // true for one step after the key goes down
+addEventListener('keydown', e => {
+  startAudio();
+  if (!e.repeat) { down.add(e.code); hit.add(e.code); }
+  if (e.code === 'Space' || e.code === 'Tab' || e.code.startsWith('Arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => down.delete(e.code));
+addEventListener('pointerdown', () => startAudio());
+addEventListener('blur', () => down.clear());
+canvas.addEventListener('click', () => { if (scene === 'play' && !state.menu && canvas.requestPointerLock) canvas.requestPointerLock(); });
+addEventListener('mousemove', e => { // the look; the kayak points where you look
+  if (document.pointerLockElement !== canvas || scene !== 'play' || state.menu) return;
+  state.yaw -= e.movementX * tune.mouse_sens;
+  state.pitch = Math.max(-0.7, Math.min(0.5, state.pitch - e.movementY * tune.mouse_sens));
+});
+
+// ---- Audio: started on first input, mute on M --------------------------------------------
+let audio = null, muted = false;
+function startAudio() {
+  if (!audio) {
+    const ac = window.GAME_AUDIO || new (window.AudioContext || window.webkitAudioContext)(); // a check may inject one
+    const out = ac.createGain(); out.gain.value = muted ? 0 : tune.volume;
+    out.connect(ac.destination); audio = { ac, out };
+  }
+  if (audio.ac.state === 'suspended') audio.ac.resume();
+}
+function setMuted(m) { muted = m; if (audio) audio.out.gain.value = m ? 0 : tune.volume; }
+addEventListener('tune', () => setMuted(muted)); // the tweak panel, when added, moved a value: the volume follows
+function tone(freq, dur, type = 'square', vol = 0.3, delay = 0, slide = 0) {
+  if (!audio || muted) return;
+  const t = audio.ac.currentTime + delay, o = audio.ac.createOscillator(), g = audio.ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, t);
+  if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(30, freq + slide), t + dur);
+  g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+  o.connect(g).connect(audio.out); o.start(t); o.stop(t + dur);
+}
+function hiss(dur, vol = 0.2, freq = 1200, delay = 0) { // filtered noise: splashes, puffs, crunches
+  if (!audio || muted || !audio.ac.createBuffer) return;
+  const ac = audio.ac, n = Math.floor(ac.sampleRate * dur), buf = ac.createBuffer(1, n, ac.sampleRate), d = buf.getChannelData(0);
+  let s = 12345; for (let i = 0; i < n; i++) { s = (s * 1103515245 + 12345) & 0x7fffffff; d[i] = (s / 0x3fffffff - 1) * (1 - i / n); }
+  const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  src.buffer = buf; f.type = 'bandpass'; f.frequency.value = freq; g.gain.value = vol;
+  src.connect(f).connect(g).connect(audio.out); src.start(ac.currentTime + delay);
+}
+const sfx = {
+  cast() { tone(300, 0.25, 'sawtooth', 0.12, 0, 500); },
+  splash() { hiss(0.35, 0.35, 900); },
+  bite() { tone(880, 0.09, 'square', 0.3); tone(1175, 0.12, 'square', 0.3, 0.1); hiss(0.2, 0.25, 1500); },
+  green() { tone(523, 0.1, 'square', 0.25); tone(659, 0.12, 'square', 0.25, 0.08); },
+  blue() { tone(523, 0.08, 'square', 0.25); tone(784, 0.08, 'square', 0.25, 0.07); tone(1047, 0.16, 'square', 0.25, 0.14); },
+  miss() { tone(140, 0.25, 'sawtooth', 0.3, 0, -60); },
+  lost() { tone(330, 0.2, 'triangle', 0.3, 0, -150); tone(220, 0.35, 'triangle', 0.3, 0.2, -100); },
+  jingle() { [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, 0.16, 'square', 0.25, i * 0.09)); },
+  blip() { tone(700, 0.05, 'square', 0.18); },
+  ok() { tone(600, 0.07, 'square', 0.22); tone(900, 0.1, 'square', 0.22, 0.07); },
+  no() { tone(180, 0.18, 'square', 0.22); },
+  cash() { tone(1245, 0.08, 'square', 0.22); tone(1661, 0.2, 'square', 0.22, 0.08); },
+  puff() { hiss(0.9, 0.18, 500); tone(110, 0.5, 'sine', 0.15, 0.1, -40); },
+  crunch() { hiss(0.08, 0.3, 2400); hiss(0.08, 0.3, 2000, 0.14); hiss(0.1, 0.3, 2600, 0.3); },
+  buzz() { tone(95, 0.22, 'square', 0.3); tone(95, 0.22, 'square', 0.3, 0.32); },
+  tangle() { tone(240, 0.12, 'sawtooth', 0.25); tone(200, 0.2, 'sawtooth', 0.25, 0.1); },
+  sleep() { tone(392, 0.5, 'sine', 0.2, 0, -120); tone(262, 0.9, 'sine', 0.2, 0.5, -60); },
+  flip() { tone(1400, 0.03, 'square', 0.15); tone(900, 0.04, 'square', 0.15, 0.04); },
+};
+
+// ---- The pond ----------------------------------------------------------------------------
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+function shoreR(th) { return 62 + 9 * Math.sin(2 * th + 0.6) + 6 * Math.sin(3 * th + 2.1) + 4 * Math.sin(5 * th + 4); } // metres from the middle to the bank
+const DOCK_TH = Math.PI / 2, R0 = shoreR(DOCK_TH);
+const DOCK = { z0: R0 + 2, z1: R0 - 13 }; // the dock runs from the bank (z0) out into the water (z1), along x = 0
+function isWater(x, z) { return Math.hypot(x, z) < shoreR(Math.atan2(z, x)); }
+function mulberry(a) { return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), a | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+const wr = mulberry(20261115); // the world's own dice: the pond is the same every run
+const trees = [];
+for (let i = 0; i < 90; i++) {
+  const th = wr() * TAU, off = Math.atan2(Math.sin(th - DOCK_TH), Math.cos(th - DOCK_TH));
+  const r = shoreR(th) + 1.8 + wr() * 9, h = 8 + wr() * 9, birch = wr() < 0.25;
+  if (Math.abs(off) < 0.33) continue; // the beach, the dock and the shack stay clear
+  trees.push({ x: Math.cos(th) * r, z: Math.sin(th) * r, h, w: 2.6 + h * 0.28, birch });
+}
+// Where the sun is at a clock time (seconds since sunrise). East is +x, the dock is on the south bank (+z).
+function sunAt(c) {
+  const D = tune.day_seconds;
+  if (c >= D) return { up: false, u: clamp((c - D) / tune.night_seconds, 0, 1) };
+  const u = c / D, el = Math.max(0.14, Math.sin(Math.PI * u) * tune.sun_max_deg * Math.PI / 180), az = Math.PI * u;
+  return { up: true, u, el, sx: Math.cos(az), sz: Math.sin(az) };
+}
+function shadowLen(t, s) { return Math.min(tune.shadow_max, t.h / Math.tan(s.el)); }
+function inShade(x, z, s) { // is this spot of water under a tree's shadow right now
+  if (!s.up) return false;
+  const dx = -s.sx, dz = -s.sz;
+  for (const t of trees) {
+    const px = x - t.x, pz = z - t.z, a = px * dx + pz * dz;
+    if (a < 0 || a > shadowLen(t, s)) continue;
+    if (Math.abs(px * dz - pz * dx) <= t.w / 2) return true;
+  }
+  return false;
+}
+
+// ---- The 3D view: low-poly, low-res, vertex wobble, dithered ------------------------------
+let G = null;
+try { G = build3D(); } catch (e) { console.warn('3D could not start:', e && e.message); }
+function build3D() {
+  const RW = CHEAP ? 240 : 480, RH = CHEAP ? 135 : 270;
+  const glc = document.createElement('canvas');
+  const renderer = new THREE.WebGLRenderer({ canvas: glc, antialias: false });
+  renderer.setPixelRatio(1); renderer.setSize(RW, RH, false);
+  const world = new THREE.Scene();
+  world.background = new THREE.Color(0x9cc8e4); world.fog = new THREE.Fog(0x9cc8e4, 24, 190);
+  const cam = new THREE.PerspectiveCamera(72, W / H, 0.1, 700); cam.rotation.order = 'YXZ';
+  const snap = { value: new THREE.Vector2(RW / 3, RH / 3) };
+  const ps1 = m => { // the PS1 vertex wobble: snap each vertex to a coarse screen grid
+    m.onBeforeCompile = sh => {
+      sh.uniforms.uSnap = snap;
+      sh.vertexShader = 'uniform vec2 uSnap;\n' + sh.vertexShader.replace('#include <project_vertex>', `#include <project_vertex>
+        if (uSnap.x > 0.0 && gl_Position.w > 0.0) { vec2 n = gl_Position.xy / gl_Position.w; n = floor(n * uSnap + 0.5) / uSnap; gl_Position.xy = n * gl_Position.w; }`);
+    };
+    return m;
+  };
+  const lam = (c, o = {}) => ps1(new THREE.MeshLambertMaterial({ color: c, flatShading: true, ...o }));
+  const flat = (c, o = {}) => ps1(new THREE.MeshBasicMaterial({ color: c, ...o }));
+  const add = (geo, mat, x = 0, y = 0, z = 0, parent = world) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); parent.add(m); return m; };
+  const box = (w, h, d, mat, x, y, z, parent) => add(new THREE.BoxGeometry(w, h, d), mat, x, y, z, parent);
+
+  const hemi = new THREE.HemisphereLight(0xcfe6ff, 0x39492f, 1.6); world.add(hemi);
+  const sunL = new THREE.DirectionalLight(0xfff0d8, 2.4); world.add(sunL); world.add(sunL.target);
+
+  const water = add(new THREE.CircleGeometry(120, 40).rotateX(-Math.PI / 2), lam(0x5d8fa3), 0, 0, 0);
+
+  { // the bank: sand at the waterline, pine-needle green behind, rising into hills
+    const N = 120, rings = [[-2.5, -0.9, [0.30, 0.27, 0.17]], [0, 0.03, [0.52, 0.44, 0.24]], [2.6, 0.5, [0.44, 0.39, 0.2]], [6, 0.9, [0.1, 0.17, 0.07]], [26, 3.2, [0.07, 0.13, 0.06]], [150, 16, [0.05, 0.1, 0.05]]];
+    const pos = [], col = [], idx = [], K = rings.length;
+    for (let i = 0; i <= N; i++) { const th = i / N * TAU, r = shoreR(th); for (const [dr, y, c] of rings) { pos.push(Math.cos(th) * (r + dr), y, Math.sin(th) * (r + dr)); col.push(...c); } }
+    for (let i = 0; i < N; i++) for (let j = 0; j < K - 1; j++) { const a = i * K + j, b = a + 1, c = a + K, d = c + 1; idx.push(a, c, b, b, c, d); }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    g.setIndex(idx); g.computeVertexNormals();
+    add(g, ps1(new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true, side: THREE.DoubleSide })));
+  }
+  for (let i = 0; i < 18; i++) { const th = i / 18 * TAU + wr() * 0.2, r = 180 + wr() * 40, h = 28 + wr() * 34; add(new THREE.ConeGeometry(50 + wr() * 30, h, 6), lam(0x2a4434), Math.cos(th) * r, h / 2 - 2, Math.sin(th) * r); }
+
+  // trees and their shadows on the water
+  const pineM = [lam(0x21482c), lam(0x1b3d27), lam(0x2a5532)], trunkM = lam(0x4a3524), birchT = lam(0xe6e2d4), birchL = [lam(0x8fae3e), lam(0xb5ad3a)];
+  const shadowM = new THREE.MeshBasicMaterial({ color: 0x0b212c, transparent: true, opacity: 0.42, depthWrite: false });
+  const shadowG = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2).translate(0, 0, 0.5);
+  const shadows = [];
+  trees.forEach((t, i) => {
+    const g = new THREE.Group(); g.position.set(t.x, 0.5, t.z); world.add(g);
+    if (t.birch) {
+      add(new THREE.CylinderGeometry(0.16, 0.24, t.h * 0.75, 5), birchT, 0, t.h * 0.375, 0, g);
+      add(new THREE.DodecahedronGeometry(t.h * 0.24, 0), birchL[i % 2], 0, t.h * 0.78, 0, g);
+      add(new THREE.DodecahedronGeometry(t.h * 0.17, 0), birchL[(i + 1) % 2], t.h * 0.12, t.h * 0.62, t.h * 0.06, g);
+    } else {
+      add(new THREE.CylinderGeometry(0.2, 0.34, t.h * 0.3, 5), trunkM, 0, t.h * 0.15, 0, g);
+      for (let k = 0; k < 3; k++) { const hh = t.h * (0.42 - k * 0.06); add(new THREE.ConeGeometry(t.h * (0.24 - k * 0.055), hh, 6), pineM[i % 3], 0, t.h * (0.3 + k * 0.22) + hh / 2 - 0.6, 0, g); }
+    }
+    const s = new THREE.Mesh(shadowG, shadowM); s.position.set(t.x, 0.05, t.z); s.renderOrder = 2; world.add(s); shadows.push(s);
+  });
+
+  { // the shack: dark-stained walls, green tin roof, stone chimney, screened porch, the beer-sign glow
+    const th = DOCK_TH + 0.21, r = shoreR(th) + 10.5, s = new THREE.Group();
+    s.position.set(Math.cos(th) * r, 1.2, Math.sin(th) * r); s.rotation.y = Math.atan2(-s.position.x, -s.position.z); world.add(s);
+    const wall = lam(0x3a281c), tin = lam(0x2f6b45), stone = lam(0x77777a), wood = lam(0x6a5238);
+    box(6.4, 1.4, 5.4, stone, 0, -0.6, 0, s); box(6, 2.8, 5, wall, 0, 1.4, 0, s); box(5.9, 0.9, 1.6, wall, 0, 3.2, 0, s);
+    box(6.8, 0.16, 3.3, tin, 0, 3.45, 1.3, s).rotation.x = 0.55; box(6.8, 0.16, 3.3, tin, 0, 3.45, -1.3, s).rotation.x = -0.55;
+    box(0.8, 3, 0.8, stone, -2.2, 3.6, -1.2, s);
+    box(6, 0.2, 2, wood, 0, 0.1, 3.4, s); box(6.4, 0.14, 2.3, tin, 0, 2.55, 3.5, s).rotation.x = 0.25;
+    add(new THREE.CylinderGeometry(0.09, 0.09, 2.3, 5), wood, 2.8, 1.25, 4.3, s); add(new THREE.CylinderGeometry(0.09, 0.09, 2.3, 5), wood, -2.8, 1.25, 4.3, s);
+    box(0.9, 1.9, 0.1, lam(0x2a1c12), 0.8, 1.0, 2.52, s); box(1.1, 0.8, 0.08, flat(0xffb347, { fog: false }), -1.4, 1.6, 2.52, s);
+    box(0.7, 0.9, 0.7, lam(0x8a3b2a), -2, 0.6, 3.5, s); box(0.7, 0.9, 0.7, lam(0x8a3b2a), -0.9, 0.6, 3.7, s);
+  }
+  { // the dock, with The Drop Box, the cooler, the tackle box, the Map board and the rowboat
+    const plank = lam(0x7b6a52), post = lam(0x55483a), zc = (DOCK.z0 + DOCK.z1) / 2;
+    box(2.6, 0.22, DOCK.z0 - DOCK.z1, plank, 0, 0.55, zc);
+    for (let i = 0; i < 4; i++) for (const sx of [-1.25, 1.25]) add(new THREE.CylinderGeometry(0.13, 0.13, 1.8, 5), post, sx, 0.1, DOCK.z1 + 0.4 + i * 4.6);
+    box(1, 0.8, 0.8, lam(0x8a2f2a), 0.6, 1.06, DOCK.z1 + 2.4); box(1.08, 0.12, 0.88, lam(0xb8463c), 0.6, 1.52, DOCK.z1 + 2.4); box(0.5, 0.06, 0.05, lam(0x1a1210), 0.6, 1.3, DOCK.z1 + 1.98);
+    box(0.8, 0.42, 0.5, lam(0x2f6fb5), -0.7, 0.87, DOCK.z1 + 1.1); box(0.84, 0.1, 0.54, lam(0xf0f0ec), -0.7, 1.13, DOCK.z1 + 1.1);
+    box(0.6, 0.3, 0.34, lam(0x3d6b3a), -0.75, 0.81, DOCK.z1 + 3.4);
+    const mx = 2.1, mz = DOCK.z0 - 2.2;
+    add(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 5), post, mx - 1, 1.7, mz); add(new THREE.CylinderGeometry(0.08, 0.08, 2.6, 5), post, mx + 1, 1.7, mz);
+    box(2.3, 1.4, 0.1, lam(0xc9b27a), mx, 2.3, mz);
+    [[-0.75, 0.3], [-0.25, 0.3], [0.25, 0.3], [0.75, 0.3]].forEach(([px, py], i) => box(0.4, 0.5, 0.04, lam(i === 0 ? 0xf4f4ee : 0x8a8f96), mx + px, 2.1 + py, mz - 0.08));
+    const boat = lam(0x6b4a2e); box(1.3, 0.45, 3.2, boat, -2.7, 0.12, DOCK.z1 + 6.5); box(0.95, 0.2, 2.7, lam(0x3a2817), -2.7, 0.3, DOCK.z1 + 6.5);
+    const bowB = add(new THREE.ConeGeometry(0.66, 1.1, 4), boat, -2.7, 0.12, DOCK.z1 + 4.4); bowB.rotation.x = -Math.PI / 2; bowB.scale.z = 0.34;
+  }
+  { // lily pads, rocks and reeds along the bank
+    const pad = lam(0x3f7a3a), rock = lam(0x7d7f80), reed = lam(0x6f8a3a);
+    for (let c = 0; c < 10; c++) { const th = wr() * TAU, r = shoreR(th) - 4 - wr() * 7; for (let i = 0; i < 6; i++) add(new THREE.CircleGeometry(0.35 + wr() * 0.35, 6).rotateX(-Math.PI / 2), pad, Math.cos(th) * r + wr() * 4 - 2, 0.03, Math.sin(th) * r + wr() * 4 - 2); }
+    for (let i = 0; i < 16; i++) { const th = wr() * TAU, r = shoreR(th) - 0.6 + wr() * 1.6; add(new THREE.DodecahedronGeometry(0.5 + wr() * 0.9, 0), rock, Math.cos(th) * r, 0.1, Math.sin(th) * r); }
+    for (let c = 0; c < 14; c++) { const th = wr() * TAU, r = shoreR(th) - 1.2; for (let i = 0; i < 5; i++) add(new THREE.ConeGeometry(0.07, 1.3 + wr() * 0.9, 3), reed, Math.cos(th) * r + wr() * 1.6 - 0.8, 0.6, Math.sin(th) * r + wr() * 1.6 - 0.8); }
+  }
+  const sunMesh = add(new THREE.CircleGeometry(16, 10), new THREE.MeshBasicMaterial({ color: 0xfff2b0, fog: false }));
+
+  // the kayak: you sit in it, so only the bow and the rod show
+  const rig = new THREE.Group(); world.add(rig); rig.add(cam); cam.position.set(0, 1.15, 0);
+  const hullM = lam(0xd9622b);
+  const bow = add(new THREE.ConeGeometry(0.56, 2.8, 6), hullM, 0, 0.16, -1.85, rig); bow.rotation.x = -Math.PI / 2; bow.scale.z = 0.45;
+  box(1.0, 0.3, 1.4, hullM, 0, 0.1, -0.2, rig); box(0.3, 0.03, 0.05, lam(0x2b2b2e), 0, 0.42, -1.3, rig); box(0.22, 0.03, 0.05, lam(0x2b2b2e), 0, 0.4, -1.6, rig);
+  const ROD_A = new THREE.Vector3(0.62, 0.5, -1.15), ROD_B = new THREE.Vector3(0.74, 1.5, -3.1);
+  const rod = add(new THREE.CylinderGeometry(0.008, 0.018, ROD_A.distanceTo(ROD_B), 4), lam(0x5a3a26), 0, 0, 0, rig);
+  rod.position.copy(ROD_A).add(ROD_B).multiplyScalar(0.5);
+  rod.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), ROD_B.clone().sub(ROD_A).normalize());
+
+  const bobber = new THREE.Group(); world.add(bobber);
+  add(new THREE.IcosahedronGeometry(0.17, 0), flat(0xe0362c), 0, 0.1, 0, bobber); add(new THREE.CylinderGeometry(0.1, 0.06, 0.16, 5), flat(0xf6f6f0), 0, -0.04, 0, bobber);
+  const lineG = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]);
+  const line = new THREE.Line(lineG, new THREE.LineBasicMaterial({ color: 0xf4f4f4 })); line.frustumCulled = false; world.add(line);
+  const ring = add(new THREE.RingGeometry(0.3, 0.42, 10).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.8, depthWrite: false }));
+
+  // the post pass: vibrance for the Chill states, YAK LOCKED blur, 5-bit colour with ordered dithering
+  const rt = CHEAP ? null : new THREE.WebGLRenderTarget(RW, RH, { minFilter: THREE.NearestFilter, magFilter: THREE.NearestFilter });
+  const postU = { tD: { value: rt && rt.texture }, uRes: { value: new THREE.Vector2(RW, RH) }, uSat: { value: 1 }, uBlur: { value: 0 }, uDither: { value: 1 } };
+  const postS = new THREE.Scene(), postC = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1);
+  postS.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), new THREE.ShaderMaterial({
+    uniforms: postU, depthTest: false,
+    vertexShader: 'varying vec2 vUv; void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }',
+    fragmentShader: `uniform sampler2D tD; uniform vec2 uRes; uniform float uSat; uniform float uBlur; uniform float uDither; varying vec2 vUv;
+      float b2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
+      float b4(vec2 a) { return b2(0.5 * a) * 0.25 + b2(a); }
+      void main() {
+        vec2 px = uBlur / uRes; vec3 c = texture2D(tD, vUv).rgb;
+        if (uBlur > 0.0) c = (c * 2.0 + texture2D(tD, vUv + vec2(px.x, 0.0)).rgb + texture2D(tD, vUv - vec2(px.x, 0.0)).rgb + texture2D(tD, vUv + vec2(0.0, px.y)).rgb + texture2D(tD, vUv - vec2(0.0, px.y)).rgb + texture2D(tD, vUv + px).rgb + texture2D(tD, vUv - px).rgb) / 8.0;
+        c = pow(max(c, 0.0), vec3(1.0 / 2.2));
+        float l = dot(c, vec3(0.299, 0.587, 0.114)); c = mix(vec3(l), c, uSat);
+        float d = (b4(gl_FragCoord.xy) - 0.5) * uDither;
+        c = floor(c * 31.0 + 0.5 + d) / 31.0;
+        gl_FragColor = vec4(clamp(c, 0.0, 1.0), 1.0);
+      }`,
+  })));
+
+  const C = h => new THREE.Color(h);
+  const DAY = [[0, C(0xe9b58c)], [0.1, C(0xa6d0ea)], [0.5, C(0x9cc8e4)], [0.86, C(0xc9d2c4)], [1, C(0xe39a5c)]], NIGHT = C(0x121a30);
+  const sky = new THREE.Color(), tmp = new THREE.Color(), v = new THREE.Vector3(), tip = new THREE.Vector3();
+  function skyAt(s) {
+    if (!s.up) { if (s.u < 0.18) return sky.copy(DAY[4][1]).lerp(NIGHT, s.u / 0.18); if (s.u > 0.82) return sky.copy(NIGHT).lerp(DAY[0][1], (s.u - 0.82) / 0.18); return sky.copy(NIGHT); }
+    for (let i = 0; i < DAY.length - 1; i++) if (s.u <= DAY[i + 1][0]) return sky.copy(DAY[i][1]).lerp(DAY[i + 1][1], (s.u - DAY[i][0]) / (DAY[i + 1][0] - DAY[i][0]));
+    return sky.copy(DAY[4][1]);
+  }
+  // view: { x, z, yaw, pitch, clock, t, speed, cast, sat, blur }
+  function render(view) {
+    const s = sunAt(view.clock), noon = s.up ? Math.sin(Math.PI * s.u) : 0;
+    skyAt(s); world.background.copy(sky); world.fog.color.copy(sky);
+    hemi.color.copy(sky); hemi.intensity = s.up ? 1.1 + 0.6 * noon : 0.5;
+    sunL.color.copy(tmp.set(0xffa864)).lerp(C(0xfff4e0), noon); if (!s.up) sunL.color.set(0x6f84c8);
+    sunL.intensity = s.up ? 0.7 + 1.9 * noon : 0.35;
+    const sx = s.up ? s.sx : 0.3, sz = s.up ? s.sz : 0.6, el = s.up ? s.el : 0.9;
+    sunL.target.position.set(view.x, 0, view.z); sunL.position.set(view.x + sx * Math.cos(el) * 100, Math.sin(el) * 100, view.z + sz * Math.cos(el) * 100);
+    water.material.color.copy(sky).multiply(tmp.setRGB(0.3, 0.56, 0.78));
+    const ang = Math.atan2(-sx, -sz);
+    shadows.forEach((m, i) => { m.visible = s.up; if (s.up) { m.rotation.y = ang; m.scale.set(trees[i].w, 1, shadowLen(trees[i], s)); } });
+    rig.position.set(view.x, Math.sin(view.t * 1.7) * 0.03, view.z); rig.rotation.y = view.yaw;
+    cam.rotation.x = view.pitch; cam.rotation.z = Math.sin(view.t * 3.1) * 0.012 * (view.speed || 0);
+    rig.updateMatrixWorld(true);
+    cam.getWorldPosition(v); sunMesh.position.set(v.x + sx * Math.cos(el) * 500, v.y + Math.sin(el) * 500, v.z + sz * Math.cos(el) * 500); sunMesh.lookAt(v);
+    sunMesh.material.color.set(s.up ? 0xfff2b0 : 0xdfe8ff); sunMesh.scale.setScalar(s.up ? 1 : 0.6);
+    const c = view.cast, out = c && c.mode !== 'idle' && c.mode !== 'charging' && c.mode !== 'done';
+    bobber.visible = line.visible = !!out; ring.visible = false;
+    if (out) {
+      bobber.position.set(c.bx, c.by, c.bz);
+      if (c.mode === 'bite' || c.mode === 'reel') { bobber.position.y = -0.1 + Math.sin(view.t * 30) * 0.05; ring.visible = true; const k = (view.t * 1.6) % 1; ring.position.set(c.bx, 0.04, c.bz); ring.scale.setScalar(1 + k * 5); ring.material.opacity = 0.8 * (1 - k); }
+      else if (c.mode === 'waiting') bobber.position.y = Math.sin(view.t * 2.4) * 0.03;
+      tip.copy(ROD_B); rig.localToWorld(tip);
+      const p = lineG.attributes.position; p.setXYZ(0, tip.x, tip.y, tip.z); p.setXYZ(1, bobber.position.x, bobber.position.y + 0.1, bobber.position.z); p.needsUpdate = true;
+    }
+    snap.value.set(tune.ps1_snap ? RW / 3 : 0, RH / 3);
+    if (rt) {
+      postU.uSat.value = 1 + (view.sat || 0); postU.uBlur.value = view.blur || 0; postU.uDither.value = tune.dither ? 1 : 0;
+      renderer.setRenderTarget(rt); renderer.render(world, cam); renderer.setRenderTarget(null); renderer.render(postS, postC);
+    } else renderer.render(world, cam);
+    ctx.imageSmoothingEnabled = false; ctx.drawImage(glc, 0, 0, W, H); ctx.imageSmoothingEnabled = true;
+  }
+  return { render };
+}
+
+// ---- The game ---------------------------------------------------------------------------
+const RK = ['c', 'u', 'r', 'e', 'l', 'x'];                       // config suffix per rarity
+const TK = [null, 'reggie', 'homegrown', 'topshelf', 'fire'];    // config suffix per strain tier
+const CHILL_NAMES = ['SOBER', 'CHILL', 'HIGH', 'STONED', 'ZONKED', 'YAK LOCKED'];
+const fishById = id => DATA.fish.find(f => f.id === id);
+const strainById = id => DATA.strains.find(s => s.id === id);
+const money = v => '$' + v.toFixed(2);
+let scene, state;
+function reset() {
+  seed = Number(params.get('seed')) || CONFIG.seed;
+  const log = {}; DATA.fish.forEach(f => log[f.id] = { caught: 0, sold: 0, best: 0 });
+  // state.gained: what this session gained, shown on the pause screen.
+  state = {
+    t: 0, score: 0, gained: '', day: 1, clock: 0.06 * tune.day_seconds, cash: tune.start_cash,
+    px: 3.4, pz: DOCK.z1 + 1.5, yaw: 0, pitch: -0.05, vx: 0, vz: 0, speed: 0,
+    fish: [], box: [], boxCash: 0, boxGoods: [], orders: [], log, junkRun: 0, bannerN: 0,
+    stash: {}, sel: null, snacks: ['cheese-puffs'], fridge: [...DATA.fridgeDaily],
+    chill: 0, strain: null, yak: 0, yakBonus: false, hold: 0,
+    phase: 'hunger', hunger: 100, munchies: 0,
+    cast: { mode: 'idle' }, texts: [], toasts: [], banner: null, menu: null, phoneAnim: 0,
+    picture2: false, legendary: false, debug: tune.debug_lost_legend > 0, sleep: 0, sleptApplied: false,
+    puffs: [], rainbow: 0, buzz: 0,
+  };
+}
+function toast(s, c = '#ffffff') { state.toasts.push({ s, t: 4.5, c }); if (state.toasts.length > 4) state.toasts.shift(); }
+function loggedAll(r) { return DATA.fish.filter(f => f.rarity === r).every(f => state.log[f.id].caught > 0); }
+function loggedCount() { return DATA.fish.filter(f => state.log[f.id].caught > 0).length; }
+function strainUnlocked(s) { // the unlock chain: Commons -> Reggie -> Uncommons -> Home Grown -> Rares -> Top Shelf; Lost Legend -> Straight Fire
+  if (s.tier === 1) return loggedAll(0); if (s.tier === 2) return loggedAll(1); if (s.tier === 3) return loggedAll(2);
+  return state.debug || state.log['silver-trout'].caught > 0;
+}
+function chillIdx() { if (state.yak > 0) return 5; const c = state.chill; return c <= 0 ? 0 : c < 25 ? 1 : c < 50 ? 2 : c < 75 ? 3 : 4; } // 1-24 Chill, 25-49 High, 50-74 Stoned, 75-100 Zonked
+function tierNow() { return state.chill > 0 && state.strain ? strainById(state.strain).tier : 0; }
+function munchLocked() { return state.phase === 'munchies' && state.munchies >= 100; }
+function nearDock() { return Math.abs(state.px) < 6 && state.pz > DOCK.z1 - 3.5 && state.pz < DOCK.z0 + 1; }
+function vibrance() { return [0, tune.vib_chill, tune.vib_high, tune.vib_stoned, tune.vib_zonked, tune.vib_yak][chillIdx()]; }
+
+// What bites: the strain tier opens rarities, the Chill state lifts the odds of the tier's new ones.
+function pickFish(r) {
+  const pool = DATA.fish.filter(f => f.rarity === r); let tot = 0;
+  const w = pool.map(f => { const v = state.log[f.id].caught > 0 ? 1 : tune.new_species_bias; tot += v; return v; });
+  let x = rng() * tot; for (let i = 0; i < pool.length; i++) { x -= w[i]; if (x <= 0) return pool[i]; }
+  return pool[pool.length - 1];
+}
+function mkFish(f) {
+  const k = Math.pow(rng(), 1.6), w = f.wmin + (f.wmax - f.wmin) * k;
+  const value = tune['price_' + RK[Math.min(4, f.rarity)]] * (0.7 + 0.6 * k) * (tierNow() === 4 ? tune.fire_bonus : 1);
+  return { kind: 'fish', f, name: f.name, rarity: f.rarity, w: Math.round(w * 100) / 100, value: Math.round(value * 100) / 100 };
+}
+function mkJunk() { const j = DATA.junk[Math.floor(rng() * DATA.junk.length)]; return { kind: 'junk', j, name: j.name, rarity: 0, w: 0, value: Math.round(tune.price_junk * (0.4 + 1.2 * rng()) * 100) / 100 }; }
+function pickCatch() {
+  const tier = tierNow();
+  if (state.yakBonus) { state.yakBonus = false; return mkFish(pickFish(rng() < 0.5 ? 3 : 4)); } // the Top Shelf YAK LOCK bonus
+  if (state.debug && tier >= 3 && state.log['silver-trout'].caught === 0 && [0, 1, 2, 3, 4].every(loggedAll)) return mkFish(fishById('silver-trout')); // debug stand-in for Pond 2's Top Shelf
+  if (tier === 0 && !loggedCount()) return mkFish(fishById('pumpkinseed')); // the first minute ends on a Pumpkinseed
+  if (tier === 0) return loggedAll(0) && rng() < tune.junk_chance ? mkJunk() : mkFish(pickFish(0));
+  const maxR = [0, 1, 2, 4, 4][tier], firstNew = [0, 1, 2, 3, 2][tier], bonus = 1 + tune.state_bonus * Math.max(0, Math.min(4, chillIdx()) - 1);
+  const ws = []; let tot = 0;
+  for (let r = 0; r <= maxR; r++) { let w = tune['w' + tier + '_' + RK[r]]; if (r >= firstNew) w *= bonus; ws.push(w); tot += w; }
+  let x = rng() * tot; for (let r = 0; r <= maxR; r++) { x -= ws[r]; if (x <= 0) return mkFish(pickFish(r)); }
+  return mkFish(pickFish(0));
+}
+
+function newZones(c) { // where green and blue sit for this stop
+  const gw = tune['green_' + c.rk], bw = tune['blue_' + c.rk];
+  c.g0 = 0.04 + rng() * (0.92 - gw); c.g1 = c.g0 + gw;
+  for (let i = 0; i < 30; i++) { c.b0 = 0.02 + rng() * (0.96 - bw); c.b1 = c.b0 + bw; if (c.b1 < c.g0 - 0.02 || c.b0 > c.g1 + 0.02) break; }
+}
+function landCatch(it) {
+  state.rainbow = 1.4; sfx.jingle();
+  const before = DATA.strains.map(strainUnlocked);
+  if (it.kind === 'junk') {
+    state.fish.push(it); state.junkRun++;
+    state.banner = { it, t: 4.5, isNew: false, line: DATA.junkBanners[state.bannerN++ % DATA.junkBanners.length] };
+    if (state.junkRun >= tune.junk_texts) { state.junkRun = 0; state.texts.unshift("go smoke somethin' -The Guy"); state.buzz = 1.3; sfx.buzz(); toast('TEXT: "go smoke somethin\' -The Guy"', '#9fe870'); }
+  } else {
+    const f = it.f, L = state.log[f.id], isNew = L.caught === 0; L.caught++; L.best = Math.max(L.best, it.w);
+    if (f.rarity === 5) toast('Lost Legend: photographed and released.', '#ff7ad9'); else state.fish.push(it);
+    state.banner = { it, t: 5, isNew, line: DATA.banners[state.bannerN++ % DATA.banners.length] };
+    if (f.rarity === 4 && !state.legendary) { state.legendary = true; toast('The Map has a new picture for sale. (the dock)', '#ffc93c'); }
+    DATA.strains.forEach((s, i) => { if (!before[i] && strainUnlocked(s)) toast(`NEW AT THE GUY: ${s.name} (${s.tierName})`, '#9fe870'); });
+    state.gained = `${loggedCount()} of 10 fish logged`;
+    events.push({ type: 'catch', id: f.id });
+  }
+}
+function tickCast(dt) {
+  const c = state.cast;
+  if (c.mode === 'idle') {
+    if (pressed('Space')) { if (munchLocked()) { toast('Munchies maxed. Eat first (R).', '#ffb347'); sfx.no(); } else { state.cast = { mode: 'charging', charge: 0 }; } }
+  } else if (c.mode === 'charging') {
+    c.charge = Math.min(1, c.charge + dt / tune.cast_charge);
+    if (!down.has('Space')) { // let go: the line flies straight ahead, hold time is distance
+      const d = tune.cast_min + (tune.cast_max - tune.cast_min) * c.charge, fx = -Math.sin(state.yaw), fz = -Math.cos(state.yaw);
+      Object.assign(c, { mode: 'flying', t: 0, sx: state.px + fx * 1.2, sz: state.pz + fz * 1.2, tx: state.px + fx * d, tz: state.pz + fz * d, bx: state.px, by: 1.5, bz: state.pz, d });
+      sfx.cast();
+    }
+  } else if (c.mode === 'flying') {
+    c.t += dt; const k = Math.min(1, c.t / tune.cast_flight);
+    c.bx = c.sx + (c.tx - c.sx) * k; c.bz = c.sz + (c.tz - c.sz) * k; c.by = 1.6 * (1 - k) + Math.sin(Math.PI * k) * (1.5 + c.d * 0.12);
+    if (k >= 1) {
+      c.by = 0;
+      if (!isWater(c.tx, c.tz)) { c.mode = 'tangled'; c.tangle = 0; c.by = 0.6; sfx.tangle(); } // on the bank: a tangle
+      else {
+        c.mode = 'waiting'; const s = sunAt(state.clock); c.shaded = inShade(c.tx, c.tz, s); sfx.splash();
+        const base = c.shaded ? tune.bite_shade : tune.bite_open; // the brief: 5 s open, 2 s in shade, about +-1 s
+        c.wait = Math.max(0.6, base + (rng() * 2 - 1) * tune.bite_jitter) * (s.up ? 1 : tune.night_bite_mult);
+      }
+    }
+  } else if (c.mode === 'tangled') {
+    if (pressed('Space')) { c.tangle += 1; sfx.blip(); }
+    c.tangle = Math.max(0, c.tangle - tune.tangle_decay * dt);
+    if (c.tangle >= tune.tangle_presses) { state.cast = { mode: 'done', t: 0.4 }; toast('Free! Mind the bank.'); sfx.ok(); }
+  } else if (c.mode === 'waiting') {
+    c.wait -= dt;
+    if (pressed('Space')) { state.cast = { mode: 'done', t: 0.3 }; }
+    else if (c.wait <= 0) { c.mode = 'bite'; c.window = tune.hookset_window; c.item = pickCatch(); sfx.bite(); }
+  } else if (c.mode === 'bite') {
+    c.window -= dt;
+    if (pressed('Space')) { // hooked: the pull gauge starts
+      const r = c.item.kind === 'junk' ? 0 : c.item.rarity; c.rk = RK[r];
+      Object.assign(c, { mode: 'reel', pulls: tune.needle_start, need: c.item.kind === 'junk' ? 2 : tune['pulls_' + c.rk], pos: 0, dir: 1, speed: tune['needle_speed_' + c.rk] * (c.item.kind === 'junk' ? 0.8 : 1), pause: 0, last: '' });
+      newZones(c); sfx.ok();
+    } else if (c.window <= 0) { state.cast = { mode: 'done', t: 0.8 }; toast('Too slow. It spat the hook.', '#ffb347'); sfx.lost(); }
+  } else if (c.mode === 'reel') {
+    if (c.pause > 0) {
+      c.pause -= dt;
+      if (c.pause <= 0) {
+        if (c.pulls < 0) { state.cast = { mode: 'done', t: 0.8 }; toast('It got away.', '#ffb347'); sfx.lost(); }
+        else if (c.pulls >= c.need) { const it = c.item; state.cast = { mode: 'done', t: 1.2 }; landCatch(it); }
+        else { newZones(c); c.speed *= 1 + tune.needle_ramp; c.last = ''; }
+      }
+    } else {
+      c.pos += c.dir * c.speed * dt; if (c.pos > 1) { c.pos = 2 - c.pos; c.dir = -1; } if (c.pos < 0) { c.pos = -c.pos; c.dir = 1; }
+      if (pressed('Space')) { // stop the lure: blue +3, green +1, anything else -1
+        if (c.pos >= c.b0 && c.pos <= c.b1) { c.pulls += tune.needle_blue; c.last = 'blue'; sfx.blue(); }
+        else if (c.pos >= c.g0 && c.pos <= c.g1) { c.pulls += tune.needle_green; c.last = 'green'; sfx.green(); }
+        else { c.pulls -= tune.needle_miss; c.last = 'miss'; sfx.miss(); }
+        c.pause = 0.4;
+      }
+    }
+  } else if (c.mode === 'done') { c.t -= dt; if (c.t <= 0) state.cast = { mode: 'idle' }; }
+}
+function nextStrain() { const ids = Object.keys(state.stash); if (!ids.length) return; state.sel = ids[(ids.indexOf(state.sel) + 1) % ids.length]; sfx.blip(); }
+function smoke() {
+  const m = state.cast.mode; if (m === 'reel' || m === 'bite' || m === 'tangled' || m === 'flying') return;
+  if (munchLocked()) { toast('Munchies maxed. Eat first (R).', '#ffb347'); return sfx.no(); }
+  const id = state.sel, per = tune.grams_per_hit;
+  if (!id || !(state.stash[id] >= per - 1e-6)) { toast('Nothing to smoke. Order from The Guy (TAB).', '#ffb347'); return sfx.no(); }
+  state.stash[id] -= per; if (state.stash[id] < per - 1e-6) { delete state.stash[id]; state.sel = Object.keys(state.stash)[0] || null; }
+  const s = strainById(id); state.strain = id;
+  if (state.chill >= 100 && state.yak <= 0) { // one more hit at 100%: YAK LOCKED
+    state.yak = tune.yak_seconds; if (s.tier === 3) state.yakBonus = true;
+    toast(s.tier === 3 ? 'YAK LOCKED. Next cast: Epic or Legendary, guaranteed.' : 'YAK LOCKED.', '#ff7ad9');
+  } else { state.chill = Math.min(100, state.chill + tune['chill_' + TK[s.tier]]); if (state.chill >= 100) state.hold = tune.full_hold; }
+  if (state.phase === 'hunger') state.hunger = Math.max(0, state.hunger - tune.hunger_hit); else state.munchies = Math.min(100, state.munchies + tune.munchies_hit); // smoking speeds the bar
+  for (let i = 0; i < 7; i++) state.puffs.push({ x: 560 + i * 26, y: 700, r: 30 + (i % 3) * 14, t: 0, d: i * 0.05 });
+  sfx.puff();
+}
+function applyFood(f) { // food lowers Munchies; once Munchies is back to 0 it refills Hunger
+  const m = tune['food_' + f.munchies], h = tune['food_' + f.hunger];
+  if (state.phase === 'munchies') { state.munchies -= m; if (state.munchies <= 0) { state.munchies = 0; state.phase = 'hunger'; state.hunger = Math.min(100, h); } }
+  else state.hunger = Math.min(100, state.hunger + h);
+}
+function eat() {
+  if (!state.snacks.length) { toast('No snacks. The fridge is at the dock.', '#ffb347'); return sfx.no(); }
+  const f = DATA.food.find(x => x.id === state.snacks.shift()); applyFood(f); toast('Ate: ' + f.name); sfx.crunch();
+}
+function tickMeters(dt) {
+  if (state.phase === 'hunger') { state.hunger -= tune.hunger_drain * dt; if (state.hunger <= 0) { state.hunger = 0; state.phase = 'munchies'; state.munchies = 0; toast('Here come the Munchies.', '#ffb347'); } }
+  else if (state.munchies < 100) { state.munchies = Math.min(100, state.munchies + tune.munchies_fill * dt); if (state.munchies >= 100) { toast('MUNCHIES MAXED. No fishing, no smoking, till you eat.', '#ff6a5a'); sfx.no(); } }
+  if (state.yak > 0) { state.yak -= dt; state.chill = 100; if (state.yak <= 0) state.hold = 0; }
+  else if (state.hold > 0) state.hold -= dt;
+  else if (state.chill > 0) { state.chill -= tune.chill_drain * dt; if (state.chill <= 0) { state.chill = 0; state.strain = null; toast('Sober again.'); } }
+  state.clock += dt; if (state.clock >= tune.day_seconds + tune.night_seconds) { state.clock = 0; state.day++; }
+  for (const t of state.toasts) t.t -= dt; state.toasts = state.toasts.filter(t => t.t > 0);
+  if (state.banner) { state.banner.t -= dt; if (state.banner.t <= 0) state.banner = null; }
+  for (const p of state.puffs) p.t += dt; state.puffs = state.puffs.filter(p => p.t < 2.2);
+  state.rainbow = Math.max(0, state.rainbow - dt); state.buzz = Math.max(0, state.buzz - dt);
+  state.score = Math.round(state.cash);
+}
+function movePlayer(dt) {
+  const turn = (down.has('KeyD') || down.has('ArrowRight') ? 1 : 0) - (down.has('KeyA') || down.has('ArrowLeft') ? 1 : 0);
+  state.yaw -= turn * tune.turn_rate * dt;
+  state.pitch = clamp(state.pitch + ((down.has('ArrowUp') ? 1 : 0) - (down.has('ArrowDown') ? 1 : 0)) * dt, -0.7, 0.5);
+  const free = state.cast.mode === 'idle' || state.cast.mode === 'done'; // the line is out: the kayak holds still
+  const go = free ? (down.has('KeyW') ? 1 : 0) - (down.has('KeyS') ? 0.6 : 0) : 0;
+  const fx = -Math.sin(state.yaw), fz = -Math.cos(state.yaw);
+  state.vx += fx * go * tune.paddle_accel * dt; state.vz += fz * go * tune.paddle_accel * dt;
+  const drag = Math.exp(-tune.paddle_drag * (free ? 1 : 4) * dt); state.vx *= drag; state.vz *= drag;
+  const sp = Math.hypot(state.vx, state.vz); if (sp > tune.paddle_max) { state.vx *= tune.paddle_max / sp; state.vz *= tune.paddle_max / sp; }
+  state.px += state.vx * dt; state.pz += state.vz * dt; state.speed = Math.min(sp, tune.paddle_max);
+  const r = Math.hypot(state.px, state.pz), lim = shoreR(Math.atan2(state.pz, state.px)) - 1.4;
+  if (r > lim) { state.px *= lim / r; state.pz *= lim / r; state.vx *= 0.3; state.vz *= 0.3; } // the bank stops the kayak
+}
+
+// ---- The dock, the phone and the Map ------------------------------------------------------
+function closeMenu() { state.menu = null; state.phoneAnim = 0; }
+function say(s) { if (state.menu) state.menu.msg = s; }
+function dropBox() { // both ways: fish in for Jimmy, cash and deliveries out
+  const n = state.fish.length, out = [];
+  if (n) { state.box.push(...state.fish); state.fish = []; out.push(`Dropped ${n} in the box. Jimmy pays overnight.`); }
+  if (state.boxCash > 0) { state.cash += state.boxCash; out.push(`Collected ${money(state.boxCash)} from Jimmy.`); state.boxCash = 0; sfx.cash(); }
+  if (state.boxGoods.length) { for (const g of state.boxGoods) { state.stash[g.id] = (state.stash[g.id] || 0) + g.g; if (!state.sel) state.sel = g.id; } out.push(`Picked up ${state.boxGoods.length} from The Guy.`); state.boxGoods = []; sfx.ok(); }
+  say(out.length ? out.join(' ') : 'Nothing to drop, nothing waiting.'); if (n && out.length === 1) sfx.ok();
+}
+function startSleep() { closeMenu(); state.sleep = 2.4; state.sleptApplied = false; sfx.sleep(); }
+function tickSleep(dt) {
+  state.sleep -= dt;
+  if (!state.sleptApplied && state.sleep < 1.2) { // morning: Jimmy has paid, The Guy has delivered, the fridge is restocked
+    state.sleptApplied = true; state.day++; state.clock = 0.02 * tune.day_seconds;
+    let pay = 0; for (const it of state.box) { pay += it.value; if (it.kind === 'fish') state.log[it.f.id].sold++; }
+    const n = state.box.length; state.box = []; state.boxCash += pay;
+    const goods = state.orders.length; state.boxGoods.push(...state.orders); state.orders = [];
+    state.fridge = [...DATA.fridgeDaily]; state.chill = 0; state.strain = null; state.yak = 0; state.yakBonus = false; state.hold = 0;
+    if (state.phase === 'hunger') state.hunger = Math.max(12, state.hunger - 20); else state.munchies = Math.min(100, state.munchies + 12);
+    state.cast = { mode: 'idle' }; toast(`Day ${state.day}.`);
+    if (n) toast(`Jimmy left ${money(pay)} in The Drop Box for ${n}.`, '#9fe870');
+    if (goods) toast("The Guy's delivery is in The Drop Box.", '#9fe870');
+  }
+  if (state.sleep <= 0) state.sleep = 0;
+}
+function fridge() {
+  if (!state.fridge.length) return say('The fridge is empty till morning.');
+  const id = state.fridge.shift(); state.snacks.push(id); say('Packed: ' + DATA.food.find(f => f.id === id).name + '.'); sfx.ok();
+}
+function dockMenu() {
+  return { kind: 'dock', title: 'THE DOCK', sel: 0, msg: '', rows: () => [
+    { label: 'The Drop Box', sub: `drop ${state.fish.length} catch  ·  waiting: ${money(state.boxCash)}, ${state.boxGoods.length} from The Guy`, act: dropBox },
+    { label: 'Bed', sub: 'sleep till morning: Jimmy pays, The Guy delivers', act: startSleep },
+    { label: 'Fridge', sub: `${state.fridge.length} snacks left today  ·  you carry ${state.snacks.length}`, act: fridge },
+    { label: 'Map', sub: 'the ponds of the North East', act: () => { state.menu = { kind: 'map', msg: '', parent: dockMenu }; } },
+    { label: 'Back to the water', act: closeMenu },
+  ] };
+}
+function buyPicture() { // once the Legendary is landed, the next pond's picture is for sale
+  if (state.picture2) return say('Already pinned. Travel opens in the full game.');
+  if (!state.legendary) { sfx.no(); return say("Land this pond's Legendary first: the Landlocked Atlantic Salmon."); }
+  if (state.cash < tune.map_picture) { sfx.no(); return say(`The picture costs ${money(tune.map_picture)}. You have ${money(state.cash)}.`); }
+  state.cash -= tune.map_picture; state.picture2 = true; state.gained = 'Lake Winnipe-SMOKE-ee pinned on the Map'; sfx.jingle();
+  say('Pinned: Lake Winnipe-SMOKE-ee. Travel opens in the full game.'); events.push({ type: 'picture', pond: 2 });
+}
+function phoneRoot() {
+  return { kind: 'phone', title: 'SPEED DIAL', sel: 0, msg: '', rows: () => [
+    { label: '1 The Guy', sub: 'buy strains by the gram', act: () => { state.menu = guyMenu(); sfx.blip(); } },
+    { label: '2 Jimmy (Fish Guy)', sub: 'Quick Sell, for less', act: () => { state.menu = jimmyMenu(); sfx.blip(); } },
+    { label: '3 John (Unc)', sub: 'fishing log, Ask Unc', act: () => { state.menu = uncMenu(); sfx.blip(); } },
+    { label: 'Close phone', act: closeMenu },
+  ], foot: () => state.texts.length ? 'TXT: ' + state.texts[0] : 'No new texts.' };
+}
+function guyMenu() {
+  return { kind: 'phone', title: 'THE GUY', sel: 0, msg: '', parent: phoneRoot, rows: () => DATA.strains.filter(s => s.tier < 4 || strainUnlocked(s)).map(s => {
+    const ok = strainUnlocked(s), p = tune['gram_' + TK[s.tier]], on = state.orders.filter(o => o.id === s.id).length;
+    return { label: s.name, dim: !ok, sub: ok ? `${s.tierName} ${money(p)}/g  have ${(state.stash[s.id] || 0).toFixed(1)}g${on ? '  +' + on + 'g coming' : ''}` : `LOCKED: ${s.need}`, act: () => {
+      if (!ok) { sfx.no(); return say('Locked: ' + s.need + '.'); }
+      if (state.cash < p) { sfx.no(); return say('Not enough cash. Sell some fish first.'); }
+      state.cash -= p; state.orders.push({ id: s.id, g: 1 }); sfx.cash(); say('Ordered 1g. It lands in The Drop Box after you sleep.');
+    } };
+  }).concat([{ label: 'Back', act: () => { state.menu = phoneRoot(); } }]) };
+}
+function jimmyMenu() {
+  return { kind: 'phone', title: 'JIMMY (FISH GUY)', sel: 0, msg: '', parent: phoneRoot, rows: () => {
+    const it = state.fish[0], q = tune.quick_sell;
+    return [
+      it ? { label: 'Quick Sell: ' + (it.f ? it.f.short : it.name), sub: `${it.w ? it.w.toFixed(2) + ' lb  ' : ''}${money(it.value * q)} now (${Math.round(q * 100)}% of full)`, act: () => {
+        state.fish.shift(); state.cash += it.value * q; if (it.kind === 'fish') state.log[it.f.id].sold++; sfx.cash(); say(`Sold for ${money(it.value * q)}. ${state.fish.length} left in the boat.`);
+      } } : { label: 'No catch in the boat', dim: true, act: () => { sfx.no(); } },
+      { label: 'Full price?', dim: true, sub: 'The Drop Box at the dock, then sleep', act: () => say('The Drop Box pays full price overnight. I pay less, right now, one at a time.') },
+      { label: 'Back', act: () => { state.menu = phoneRoot(); } },
+    ];
+  } };
+}
+function uncMenu() {
+  return { kind: 'phone', log: true, title: 'JOHN (UNC)', sel: 0, msg: '', parent: phoneRoot, rows: () => [
+    { label: 'Ask Unc', act: () => { say('Unc: ' + DATA.tips[Math.floor(rng() * DATA.tips.length)]); sfx.blip(); } },
+    { label: 'Back', act: () => { state.menu = phoneRoot(); } },
+  ] };
+}
+function tickMenu() {
+  const m = state.menu; state.phoneAnim = Math.min(1, state.phoneAnim + STEP * 6);
+  if (pressed('Tab') || pressed('Escape') || pressed('Backspace')) { sfx.flip(); if (m.parent) state.menu = m.parent(); else closeMenu(); return; }
+  if (m.kind === 'map') { if (pressed('Space') || pressed('Enter')) buyPicture(); if (pressed('KeyE')) state.menu = dockMenu(); return; }
+  const rows = m.rows(); m.sel = clamp(m.sel, 0, rows.length - 1);
+  if (pressed('ArrowUp') || pressed('KeyW')) { m.sel = (m.sel + rows.length - 1) % rows.length; sfx.blip(); }
+  if (pressed('ArrowDown') || pressed('KeyS')) { m.sel = (m.sel + 1) % rows.length; sfx.blip(); }
+  if (pressed('Enter') || pressed('Space') || pressed('KeyE')) { const r = rows[m.sel]; if (r && r.act) r.act(); }
+}
+
+// ---- Figures: every fish and every piece of junk, drawn in code, each with its own outline ----
+const h1 = i => { const x = Math.sin(i * 12.9898) * 43758.5453; return x - Math.floor(x); }; // fixed scatter for markings (look only)
+function poly(g, pts, fill) { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo(x, y) : g.moveTo(x, y)); g.closePath(); g.fillStyle = fill; g.fill(); }
+function drawFish(g, f, cx, cy, s) {
+  const a = f.art, L = 170 * s * a.L, Hh = L * a.H, nose = cx - L / 2, root = cx + L * 0.3, end = cx + L / 2;
+  g.save(); g.lineJoin = 'round'; g.lineCap = 'round';
+  // tail
+  const th = Hh * (a.tail === 'fork' ? 1.1 : 0.9);
+  g.fillStyle = a.fin; g.beginPath(); g.moveTo(root - 3, cy - Hh * 0.2);
+  if (a.tail === 'fork') { g.lineTo(end, cy - th); g.lineTo(end - L * 0.1, cy); g.lineTo(end, cy + th); }
+  else if (a.tail === 'round') { g.quadraticCurveTo(end + L * 0.06, cy - th, end, cy); g.quadraticCurveTo(end + L * 0.06, cy + th, root - 3, cy + Hh * 0.2); }
+  else if (a.tail === 'square') { g.lineTo(end, cy - th * 0.95); g.lineTo(end - L * 0.012, cy); g.lineTo(end, cy + th * 0.95); }
+  else { g.lineTo(end, cy - th); g.lineTo(end - L * 0.045, cy); g.lineTo(end, cy + th); }
+  g.lineTo(root - 3, cy + Hh * 0.2); g.closePath(); g.fill();
+  // back fins, drawn first so the body covers their roots
+  const y0 = cy - Hh * 0.55;
+  if (a.dorsal === 'spiny' || a.dorsal === 'split') {
+    const x0 = cx - L * 0.22, x1 = a.dorsal === 'split' ? cx - L * 0.02 : cx + L * 0.2, n = 6, pts = [[x0, y0]];
+    for (let i = 0; i <= n; i++) { const x = x0 + (x1 - x0) * i / n; pts.push([x + L * 0.015, cy - Hh * (1.45 + 0.2 * Math.sin(i * 1.1))]); if (i < n) pts.push([x + (x1 - x0) / n * 0.6, cy - Hh * 1.12]); }
+    pts.push([x1, y0]); poly(g, pts, a.fin);
+    if (a.dorsal === 'split') { g.fillStyle = a.fin; g.beginPath(); g.moveTo(cx + L * 0.01, y0); g.quadraticCurveTo(cx + L * 0.08, cy - Hh * 1.75, cx + L * 0.2, cy - Hh * 1.1); g.lineTo(cx + L * 0.22, cy - Hh * 0.4); g.closePath(); g.fill(); }
+  } else if (a.dorsal === 'soft') poly(g, [[cx - L * 0.1, y0], [cx - L * 0.02, cy - Hh * 1.7], [cx + L * 0.1, cy - Hh * 1.4], [cx + L * 0.12, y0]], a.fin);
+  else if (a.dorsal === 'rear') { poly(g, [[cx + L * 0.1, y0], [cx + L * 0.19, cy - Hh * 1.9], [cx + L * 0.28, cy - Hh * 1.5], [cx + L * 0.27, cy - Hh * 0.3]], a.fin); poly(g, [[cx + L * 0.1, cy + Hh * 0.55], [cx + L * 0.19, cy + Hh * 1.9], [cx + L * 0.28, cy + Hh * 1.5], [cx + L * 0.27, cy + Hh * 0.3]], a.fin); }
+  else if (a.dorsal === 'sail') {
+    g.fillStyle = a.fin; g.beginPath(); g.moveTo(cx - L * 0.2, y0); g.quadraticCurveTo(cx + L * 0.02, cy - Hh * 2.0, cx + L * 0.27, cy - Hh * 0.9); g.lineTo(cx + L * 0.27, cy - Hh * 0.3); g.closePath(); g.fill();
+    g.beginPath(); g.moveTo(cx - L * 0.12, cy + Hh * 0.6); g.quadraticCurveTo(cx + L * 0.05, cy + Hh * 1.9, cx + L * 0.27, cy + Hh * 0.9); g.lineTo(cx + L * 0.27, cy + Hh * 0.3); g.closePath(); g.fill();
+  }
+  if (a.extra === 'adipose') poly(g, [[cx + L * 0.19, cy - Hh * 0.5], [cx + L * 0.24, cy - Hh * 0.95], [cx + L * 0.26, cy - Hh * 0.35]], a.fin);
+  if (a.dorsal !== 'rear' && a.dorsal !== 'sail') { // belly fins
+    poly(g, [[cx + L * 0.08, cy + Hh * 0.6], [cx + L * 0.14, cy + Hh * 1.35], [cx + L * 0.24, cy + Hh * 0.45]], a.fin);
+    poly(g, [[cx - L * 0.08, cy + Hh * 0.8], [cx - L * 0.04, cy + Hh * 1.4], [cx + L * 0.03, cy + Hh * 0.8]], a.fin);
+    if (a.edge) { g.strokeStyle = a.edge; g.lineWidth = Math.max(1.5, 2.5 * s); g.beginPath(); g.moveTo(cx + L * 0.08, cy + Hh * 0.6); g.lineTo(cx + L * 0.14, cy + Hh * 1.35); g.moveTo(cx - L * 0.08, cy + Hh * 0.8); g.lineTo(cx - L * 0.04, cy + Hh * 1.4); g.stroke(); }
+  }
+  // body
+  const b = new Path2D();
+  if (a.head === 'blunt') { b.moveTo(nose, cy); b.bezierCurveTo(nose, cy - Hh * 1.25, cx - L * 0.05, cy - Hh * 1.05, root, cy - Hh * 0.24); b.lineTo(root, cy + Hh * 0.24); b.bezierCurveTo(cx - L * 0.05, cy + Hh * 1.05, nose, cy + Hh * 1.3, nose, cy); }
+  else if (a.head === 'duck') { b.moveTo(nose, cy - Hh * 0.12); b.lineTo(nose + L * 0.15, cy - Hh * 0.6); b.quadraticCurveTo(cx + L * 0.02, cy - Hh * 1.2, root, cy - Hh * 0.32); b.lineTo(root, cy + Hh * 0.32); b.quadraticCurveTo(cx + L * 0.02, cy + Hh * 1.2, nose + L * 0.13, cy + Hh * 0.62); b.lineTo(nose, cy + Hh * 0.22); }
+  else { b.moveTo(nose, cy + Hh * 0.05); b.quadraticCurveTo(cx - L * 0.16, cy - Hh * 1.3, root, cy - Hh * 0.22); b.lineTo(root, cy + Hh * 0.22); b.quadraticCurveTo(cx - L * 0.16, cy + Hh * 1.35, nose, cy + Hh * 0.05); }
+  b.closePath();
+  const grad = g.createLinearGradient(0, cy - Hh, 0, cy + Hh); grad.addColorStop(0, a.back); grad.addColorStop(0.45, a.back); grad.addColorStop(0.9, a.belly);
+  g.fillStyle = grad; g.fill(b);
+  g.save(); g.clip(b); // markings stay inside the body
+  const dark = 'rgba(12,18,14,0.55)';
+  if (a.pat === 'spots') for (let i = 0; i < 30; i++) { g.fillStyle = i % 3 ? '#e8742c' : '#57c0d8'; g.beginPath(); g.arc(nose + L * (0.12 + 0.62 * h1(i)), cy + Hh * (h1(i + 40) * 1.5 - 0.7), Math.max(1.4, 2.6 * s), 0, TAU); g.fill(); }
+  if (a.pat === 'bars') for (let i = 0; i < 6; i++) poly(g, [[nose + L * (0.2 + i * 0.1), cy - Hh * 1.3], [nose + L * (0.25 + i * 0.1), cy - Hh * 1.3], [nose + L * (0.235 + i * 0.1), cy + Hh * 0.25], [nose + L * (0.215 + i * 0.1), cy + Hh * 0.25]], dark);
+  if (a.pat === 'chain') { g.strokeStyle = dark; g.lineWidth = Math.max(1.2, 2 * s); g.beginPath(); for (let r = -1; r <= 1; r++) for (let i = 0; i < 12; i++) { const x = nose + L * (0.18 + i * 0.055), y = cy + r * Hh * 0.42; g.moveTo(x, y - Hh * 0.21); g.lineTo(x + L * 0.027, y); g.lineTo(x, y + Hh * 0.21); g.moveTo(x + L * 0.055, y - Hh * 0.21); g.lineTo(x + L * 0.027, y); } g.stroke(); }
+  if (a.pat === 'speck') for (let i = 0; i < 80; i++) { g.fillStyle = dark; g.fillRect(nose + L * (0.1 + 0.68 * h1(i)), cy + Hh * (h1(i + 90) * 2 - 1), Math.max(2, 3.4 * s), Math.max(2, 3 * s)); }
+  if (a.pat === 'stripe') { g.fillStyle = dark; g.beginPath(); g.moveTo(nose + L * 0.15, cy - Hh * 0.05); for (let i = 0; i <= 12; i++) g.lineTo(nose + L * (0.15 + i * 0.055), cy + Hh * (i % 2 ? -0.24 : -0.02)); for (let i = 12; i >= 0; i--) g.lineTo(nose + L * (0.15 + i * 0.055), cy + Hh * (i % 2 ? 0.02 : 0.22)); g.closePath(); g.fill(); }
+  if (a.pat === 'worm') {
+    g.strokeStyle = '#c9c98a'; g.lineWidth = Math.max(1.2, 2 * s); g.beginPath(); for (let i = 0; i < 9; i++) { const x = nose + L * (0.16 + i * 0.065), y = cy - Hh * (0.55 + 0.25 * h1(i)); g.moveTo(x, y); g.quadraticCurveTo(x + L * 0.02, y - Hh * 0.25, x + L * 0.045, y + Hh * 0.05); } g.stroke();
+    for (let i = 0; i < 9; i++) { const x = nose + L * (0.2 + 0.55 * h1(i + 7)), y = cy + Hh * (0.1 + 0.4 * h1(i + 21)); g.fillStyle = '#5aa0e0'; g.beginPath(); g.arc(x, y, Math.max(2.2, 4 * s), 0, TAU); g.fill(); g.fillStyle = '#e03a2c'; g.beginPath(); g.arc(x, y, Math.max(1.2, 2.2 * s), 0, TAU); g.fill(); }
+  }
+  if (a.pat === 'xmarks') { g.strokeStyle = 'rgba(14,20,28,0.75)'; g.lineWidth = Math.max(1.2, 1.8 * s); g.beginPath(); for (let i = 0; i < 18; i++) { const x = nose + L * (0.16 + 0.6 * h1(i + 3)), y = cy - Hh * (0.1 + 0.7 * h1(i + 50)), d = Math.max(2, 3.2 * s); g.moveTo(x - d, y - d); g.lineTo(x + d, y + d); g.moveTo(x + d, y - d); g.lineTo(x - d, y + d); } g.stroke(); }
+  if (a.shine) { g.fillStyle = 'rgba(255,255,255,0.6)'; g.fillRect(nose + L * 0.15, cy - Hh * 0.25, L * 0.55, Math.max(2, Hh * 0.16)); }
+  g.restore();
+  g.strokeStyle = '#10161a'; g.lineWidth = Math.max(1.5, 2.2 * s); g.stroke(b);
+  // head details
+  const ex = nose + L * (a.head === 'duck' ? 0.2 : 0.13), ey = cy - Hh * (a.head === 'duck' ? 0.35 : 0.28), er = Math.max(3, Hh * 0.17);
+  g.strokeStyle = '#10161a'; g.lineWidth = Math.max(1.2, 1.8 * s);
+  g.beginPath(); g.arc(nose + L * (a.head === 'duck' ? 0.27 : 0.21), cy, Hh * 0.75, -1.0, 1.0); g.stroke(); // gill
+  if (a.head === 'bigmouth') { poly(g, [[nose, cy + Hh * 0.05], [nose + L * 0.19, cy + Hh * 0.2], [nose + L * 0.04, cy + Hh * 0.5]], a.belly); g.beginPath(); g.moveTo(nose, cy + Hh * 0.05); g.lineTo(nose + L * 0.19, cy + Hh * 0.2); g.stroke(); }
+  else if (a.head === 'kype') { poly(g, [[nose - L * 0.01, cy + Hh * 0.25], [nose + L * 0.07, cy + Hh * 0.35], [nose + L * 0.02, cy - Hh * 0.05]], a.fin); g.beginPath(); g.moveTo(nose, cy + Hh * 0.1); g.lineTo(nose + L * 0.1, cy + Hh * 0.2); g.stroke(); }
+  else { g.beginPath(); g.moveTo(nose + 1, cy + Hh * (a.head === 'duck' ? 0.1 : 0.12)); g.lineTo(nose + L * (a.head === 'duck' ? 0.16 : 0.07), cy + Hh * 0.2); g.stroke(); }
+  if (a.extra === 'barbels') { g.beginPath(); for (const [dx, dy] of [[-0.06, 0.9], [-0.02, 1.1], [-0.07, -0.5], [0.03, 1.0]]) { g.moveTo(nose + 2, cy + Hh * 0.15); g.quadraticCurveTo(nose + L * dx, cy + Hh * dy * 0.5, nose + L * (dx - 0.03), cy + Hh * dy); } g.stroke(); }
+  if (a.extra === 'earflap') { g.fillStyle = '#10161a'; g.beginPath(); g.ellipse(nose + L * 0.3, cy - Hh * 0.2, Hh * 0.2, Hh * 0.14, 0, 0, TAU); g.fill(); g.fillStyle = '#e03a2c'; g.beginPath(); g.ellipse(nose + L * 0.33, cy - Hh * 0.2, Hh * 0.07, Hh * 0.1, 0, 0, TAU); g.fill(); }
+  poly(g, [[cx - L * 0.24, cy + Hh * 0.2], [cx - L * 0.12, cy + Hh * 0.62], [cx - L * 0.15, cy + Hh * 0.12]], a.fin); // pectoral fin
+  g.fillStyle = a.extra === 'redeye' ? '#d8402c' : '#f4f1e4'; g.beginPath(); g.arc(ex, ey, er, 0, TAU); g.fill(); g.stroke();
+  g.fillStyle = '#10161a'; g.beginPath(); g.arc(ex, ey, er * 0.5, 0, TAU); g.fill();
+  g.restore();
+}
+function drawJunk(g, id, cx, cy, s) {
+  g.save(); g.translate(cx, cy); g.scale(s, s); g.lineJoin = 'round'; g.strokeStyle = '#10161a'; g.lineWidth = 2.5;
+  const P = (pts, fill) => { poly(g, pts, fill); g.stroke(); };
+  if (id === 'old-boot') { P([[-22, -42], [10, -42], [12, 6], [52, 14], [58, 34], [-26, 34]], '#6a4a2c'); P([[-28, 34], [60, 34], [60, 44], [-28, 44]], '#2a2420'); g.beginPath(); for (let i = 0; i < 4; i++) { g.moveTo(-4, -30 + i * 9); g.lineTo(10, -26 + i * 9); } g.stroke(); P([[-22, -42], [10, -42], [8, -34], [-20, -34]], '#8a6238'); }
+  else if (id === 'beer-can') { P([[-22, -40], [22, -40], [24, 40], [-10, 44], [-26, 30], [-18, 0]], '#c8ccd0'); P([[-22, -40], [22, -40], [18, -48], [-18, -48]], '#9aa0a6'); P([[-19, -14], [23, -14], [24, 16], [-21, 16]], '#3f7ac0'); g.beginPath(); g.moveTo(-18, 0); g.lineTo(-4, 8); g.lineTo(-22, 22); g.stroke(); }
+  else if (id === 'tire') { g.fillStyle = '#22262a'; g.beginPath(); g.ellipse(0, 0, 58, 44, 0, 0, TAU); g.fill(); g.stroke(); g.fillStyle = '#5d8fa3'; g.beginPath(); g.ellipse(0, 0, 28, 20, 0, 0, TAU); g.fill(); g.stroke(); g.beginPath(); for (let i = 0; i < 14; i++) { const a = i / 14 * TAU; g.moveTo(Math.cos(a) * 46, Math.sin(a) * 34); g.lineTo(Math.cos(a) * 58, Math.sin(a) * 44); } g.stroke(); }
+  else if (id === 'pizza-box') { P([[-56, -6], [36, -18], [60, 14], [-34, 30]], '#b89868'); P([[-56, -6], [-34, 30], [-34, 40], [-56, 4]], '#8f7448'); P([[-34, 30], [60, 14], [60, 24], [-34, 40]], '#a08456'); P([[-56, -6], [36, -18], [28, -44], [-60, -30]], '#c9aa78'); g.fillStyle = 'rgba(60,70,50,0.45)'; g.beginPath(); g.ellipse(-4, 8, 22, 8, -0.2, 0, TAU); g.fill(); g.beginPath(); g.ellipse(-22, -24, 14, 6, -0.2, 0, TAU); g.fill(); }
+  else { P([[-16, -18], [16, -18], [18, 46], [-18, 46]], '#e0522c'); P([[-16, -18], [16, -18], [16, -38], [-2, -38], [-16, -30]], '#b8bcc2'); g.fillStyle = '#4a4e54'; g.beginPath(); g.arc(8, -40, 8, 0, TAU); g.fill(); g.stroke(); P([[-10, 4], [10, 4], [10, 30], [-10, 30]], '#f2c84a'); }
+  g.restore();
+}
+function drawItem(g, it, cx, cy, s) { if (it.kind === 'junk') drawJunk(g, it.j.id, cx, cy, s); else drawFish(g, it.f, cx, cy, s); }
+
+// ---- HUD -------------------------------------------------------------------------------
+function clockLabel() {
+  const D = tune.day_seconds, N = tune.night_seconds, c = state.clock;
+  const hrs = c < D ? 6 + 14 * c / D : 20 + 10 * (c - D) / N, h = Math.floor(hrs) % 24, m = Math.floor((hrs % 1) * 6) * 10;
+  return `${((h + 11) % 12) + 1}:${String(m).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`;
+}
+function hintLine() {
+  const c = state.cast;
+  if (munchLocked()) return state.snacks.length ? 'MUNCHIES MAXED. Eat a snack: R' : 'MUNCHIES MAXED. No snacks: paddle to the fridge at the dock';
+  if (c.mode === 'charging') return 'Let go of SPACE to cast';
+  if (c.mode === 'waiting') return (c.shaded ? 'Line in the SHADE: quick bites.' : 'Line on OPEN WATER: slower bites.') + '  SPACE reels in';
+  if (c.mode === 'bite') return 'SPACE! Set the hook!';
+  if (c.mode === 'reel') return 'SPACE: stop the lure on GREEN (+1) or BLUE (+3)';
+  if (c.mode === 'tangled') return 'On the bank. MASH SPACE to get free';
+  if (c.mode !== 'idle') return '';
+  if (!loggedCount() && !state.fish.length) return 'Paddle (W A S D) to the shade, then hold SPACE to cast';
+  if (nearDock()) return 'E: the dock (Drop Box, Bed, Fridge, Map)';
+  if (state.sel && state.chill <= 0) return 'F: smoke to hook rarer fish.  Hold SPACE to cast';
+  if (loggedAll(0) && !Object.keys(state.stash).length && !state.orders.length && !state.boxGoods.length) return 'Commons logged. TAB: order Reggie from The Guy';
+  return 'Hold SPACE to cast.  TAB: phone';
+}
+function drawHUD() {
+  const idx = chillIdx();
+  // top left: the Chill Meter and the Hunger / Munchies bar
+  panel(16, 14, 334, 142);
+  txt('CHILL METER', 30, 34, 16, '#e4dcb8', 'left');
+  txt(CHILL_NAMES[idx], 336, 34, 20, idx === 5 ? '#ff7ad9' : idx ? '#9fe870' : '#b8c0c8', 'right', HEAD, false);
+  bar(30, 48, 306, 22, state.chill / 100, idx === 5 ? '#ff7ad9' : '#62c94f', [0.25, 0.5, 0.75]);
+  const mun = state.phase === 'munchies';
+  txt(mun ? 'MUNCHIES' : 'HUNGER', 30, 90, 16, '#e4dcb8', 'left');
+  txt(mun ? (state.munchies >= 100 ? 'MAXED' : 'filling') : 'full is good', 336, 90, 15, mun && state.munchies >= 100 ? '#ff6a5a' : '#b8c0c8', 'right');
+  bar(30, 102, 306, 18, mun ? state.munchies / 100 : state.hunger / 100, mun ? (state.munchies >= 100 ? '#ff4a3a' : '#ff8a3c') : '#e8c14a');
+  const act = state.strain ? strainById(state.strain) : null;
+  txt(act ? `${act.name} (${act.tierName})` : 'no strain in effect', 30, 138, 15, act ? '#9fe870' : '#b8c0c8', 'left');
+  // top right: cash, day and time, the catch in the boat
+  panel(930, 14, 334, 86);
+  txt(money(state.cash), 1250, 38, 30, '#ffe27a', 'right', HEAD, false);
+  txt(`DAY ${state.day}`, 944, 36, 16, '#e4dcb8', 'left'); txt(clockLabel(), 944, 58, 16, '#e4dcb8', 'left');
+  txt(`IN THE BOAT: ${state.fish.length}`, 944, 82, 15, '#b8c0c8', 'left'); txt(`LOGGED ${loggedCount()}/10`, 1250, 82, 15, '#b8c0c8', 'right');
+  // bottom left: the stash
+  panel(16, 628, 334, 78);
+  const sel = state.sel ? strainById(state.sel) : null;
+  txt('ONE HITTER', 30, 646, 15, '#e4dcb8', 'left'); txt('F smoke  Q next', 336, 646, 15, '#b8c0c8', 'right');
+  txt(sel ? `${sel.name} ${state.stash[sel.id].toFixed(1)}g` : 'no weed in the cooler', 30, 668, 16, sel ? '#9fe870' : '#b8c0c8', 'left');
+  txt(`SNACKS ${state.snacks.length}`, 30, 690, 15, '#e4dcb8', 'left'); txt('R eat', 336, 690, 15, '#b8c0c8', 'right');
+  // crosshair
+  ctx.fillStyle = 'rgba(255,255,255,0.75)'; ctx.fillRect(637, 352, 6, 2); ctx.fillRect(639, 350, 2, 6);
+  // toasts
+  state.toasts.forEach((t, i) => { const y = 30 + i * 30, w = tw(t.s, 18) + 28; ctx.globalAlpha = Math.min(1, t.t * 2); ctx.fillStyle = 'rgba(8,12,18,0.82)'; ctx.fillRect(640 - w / 2, y - 14, w, 28); txt(t.s, 640, y, 18, t.c); ctx.globalAlpha = 1; });
+  const c = state.cast;
+  // cast power
+  if (c.mode === 'charging') { panel(486, 574, 308, 52); txt('CAST POWER', 640, 590, 15, '#e4dcb8'); bar(498, 600, 284, 18, c.charge, c.charge >= 1 ? '#ffe27a' : '#62c94f'); }
+  if (c.mode === 'tangled') { txt('TANGLED!', 640, 230, 76, '#ffb347', 'center', HEAD, false, 8); panel(486, 574, 308, 52); txt('MASH SPACE', 640, 590, 15, '#e4dcb8'); bar(498, 600, 284, 18, c.tangle / tune.tangle_presses, '#ffb347'); }
+  // FISH ON: red far away, through the colours to green as the fish comes in
+  if (c.mode === 'bite' || c.mode === 'reel') {
+    const k = c.mode === 'reel' ? clamp(c.pulls / c.need, 0, 1) : 0, wob = c.mode === 'bite' ? Math.sin(state.t * 40) * 4 : 0;
+    txt('FISH ON', 640 + wob, 230, 84, `hsl(${Math.round(k * 120)}, 90%, 55%)`, 'center', HEAD, false, 9);
+    if (c.mode === 'bite') bar(540, 286, 200, 12, c.window / tune.hookset_window, '#ff5a4a');
+  }
+  if (state.rainbow > 0) txt('CAUGHT!', 640, 230, 84, `hsl(${Math.round(state.t * 720) % 360}, 95%, 60%)`, 'center', HEAD, false, 9); // the rainbow flash
+  if (c.mode === 'reel') drawGauge(c);
+  if (state.yak > 0) { ctx.globalAlpha = 0.9; txt('YAK LOCKED', 640 + Math.sin(state.t * 2.3) * 14, 356 + Math.cos(state.t * 1.7) * 8, 72, '#ff7ad9', 'center', HEAD, false, 8); ctx.globalAlpha = 1; }
+  // smoke puffs
+  for (const p of state.puffs) { const t = p.t - p.d; if (t < 0) continue; ctx.globalAlpha = Math.max(0, 0.34 * (1 - t / 2)); ctx.fillStyle = '#e8ece8'; ctx.beginPath(); ctx.arc(p.x + Math.sin(t * 3 + p.x) * 22, p.y - t * 190, p.r + t * 46, 0, TAU); ctx.fill(); ctx.globalAlpha = 1; }
+  if (state.banner) drawBanner(state.banner);
+  // the hint line
+  const hint = hintLine();
+  if (hint && !state.banner) { const w = tw(hint, 18) + 30; ctx.fillStyle = 'rgba(8,12,18,0.82)'; ctx.fillRect(660 - w / 2, 676, w, 30); txt(hint, 660, 691, 18, '#ffffff'); }
+  if (state.buzz > 0) { const k = Math.sin(state.t * 60) * 3; rr(1180 + k, 612, 60, 92, 10, '#8f959c'); rr(1188 + k, 620, 44, 36, 4, '#a9d18e'); txt('TXT', 1210 + k, 638, 15, '#10240f', 'center', MONO); }
+  if (tune.crt) { ctx.fillStyle = 'rgba(0,0,0,0.16)'; for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 2); }
+}
+function drawGauge(c) { // the pull gauge: a lure sweeps the line, stop it on green or blue
+  const x = 340, y = 560, w = 600, h = 40;
+  panel(x - 16, y - 62, w + 32, 122);
+  txt(`PULLS ${Math.max(0, c.pulls)} / ${c.need}`, x, y - 42, 17, '#e4dcb8', 'left');
+  txt(c.last === 'blue' ? 'BLUE! +' + tune.needle_blue : c.last === 'green' ? 'GREEN +' + tune.needle_green : c.last === 'miss' ? 'MISS -' + tune.needle_miss : '', x + w, y - 42, 18, c.last === 'blue' ? '#6ab8ff' : c.last === 'green' ? '#62c94f' : '#ff6a5a', 'right');
+  for (let i = 0; i < c.need; i++) { ctx.fillStyle = i < c.pulls ? '#62c94f' : '#2a3440'; ctx.fillRect(x + 150 + i * (300 / c.need), y - 50, 300 / c.need - 4, 14); } // how close the fish is
+  ctx.fillStyle = '#05080c'; ctx.fillRect(x, y, w, h); ctx.fillStyle = '#5a2424'; ctx.fillRect(x + 3, y + 3, w - 6, h - 6);
+  ctx.fillStyle = '#3fbf4a'; ctx.fillRect(x + c.g0 * w, y + 3, (c.g1 - c.g0) * w, h - 6);
+  ctx.fillStyle = '#3a9cff'; ctx.fillRect(x + c.b0 * w, y + 3, (c.b1 - c.b0) * w, h - 6);
+  const lx = x + c.pos * w; // the lure
+  ctx.fillStyle = '#f4f4f4'; ctx.fillRect(lx - 1.5, y - 8, 3, h + 16);
+  poly(ctx, [[lx - 13, y - 14], [lx, y - 22], [lx + 13, y - 14], [lx, y - 6]], '#ffe27a'); ctx.strokeStyle = '#10161a'; ctx.lineWidth = 2; ctx.stroke();
+  poly(ctx, [[lx + 13, y - 14], [lx + 21, y - 20], [lx + 21, y - 8]], '#e0362c');
+}
+function drawBanner(b) { // the "TV broadcast" catch banner
+  const k = Math.min(1, (b.it.kind === 'junk' ? 4.5 - b.t : 5 - b.t) * 3, b.t * 3), x = 250 - (1 - k) * 900, y = 528, it = b.it;
+  ctx.fillStyle = '#05080c'; ctx.fillRect(x + 5, y + 5, 780, 118);
+  ctx.fillStyle = '#b8232c'; ctx.fillRect(x, y, 780, 26); ctx.fillStyle = '#16345e'; ctx.fillRect(x, y + 26, 780, 92);
+  ctx.fillStyle = '#e4dcb8'; ctx.fillRect(x, y + 24, 780, 3); ctx.fillRect(x + 186, y + 27, 3, 91);
+  txt("PUFFIN' POND LIVE", x + 12, y + 13, 16, '#ffffff', 'left', HEAD, false);
+  txt(b.line, x + 768, y + 13, 15, '#ffe27a', 'right');
+  ctx.fillStyle = '#5d8fa3'; ctx.fillRect(x + 6, y + 32, 174, 80);
+  ctx.save(); ctx.beginPath(); ctx.rect(x + 6, y + 32, 174, 80); ctx.clip();
+  drawItem(ctx, it, x + 93, y + 76, it.kind === 'junk' ? 0.62 : Math.min(0.8, 0.72 / it.f.art.L)); ctx.restore();
+  txt(it.name, x + 202, y + 54, it.name.length > 20 ? 26 : 32, '#ffffff', 'left', HEAD, false);
+  const col = it.kind === 'junk' ? '#b8c0c8' : DATA.rarityColors[it.rarity];
+  txt(it.kind === 'junk' ? 'JUNK' : DATA.rarities[it.rarity].toUpperCase(), x + 202, y + 86, 18, col, 'left');
+  txt(it.kind === 'junk' ? 'Jimmy pays pennies' : `${it.w.toFixed(2)} lb`, x + 420, y + 86, 18, '#e4dcb8', 'left');
+  if (b.isNew) { ctx.fillStyle = '#ffe27a'; ctx.fillRect(x + 634, y + 68, 134, 36); txt('NEW IN THE LOG', x + 701, y + 86, 15, '#16345e'); }
+}
+function drawRows(m, rows, x, y, w, ink, paper, labelSize, font) {
+  rows.forEach((r, i) => {
+    const hgt = r.sub ? 44 : 28, on = i === m.sel;
+    if (on) { ctx.fillStyle = ink; ctx.fillRect(x, y, w, hgt - 2); }
+    txt(r.label, x + 8, y + (r.sub ? 13 : 13), labelSize, on ? paper : ink, 'left', font);
+    if (r.sub) txt(r.sub, x + 8, y + 31, 14, on ? paper : ink, 'left', font);
+    y += hgt;
+  });
+  return y;
+}
+function drawPhone(m) { // the 2008 flip phone: slides up and flips open
+  const a = state.phoneAnim, e = 1 - (1 - a) * (1 - a), px = 420, py = 14 + (1 - e) * 720, ink = '#10240f', paper = '#a9d18e';
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, W, H);
+  rr(px, py + 392, 440, 300, 28, '#8f959c'); rr(px + 10, py + 402, 420, 280, 20, '#6c727a');
+  rr(px + 160, py + 412, 120, 44, 20, '#3b4046'); rr(px + 196, py + 422, 48, 24, 10, '#8f959c'); // the direction pad
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) { const kx = px + 46 + c * 120, ky = py + 468 + r * 50; rr(kx, ky, 108, 40, 8, '#3b4046'); txt('123456789*0#'[r * 3 + c], kx + 54, ky + 20, 20, '#e8eaec', 'center', MONO); }
+  ctx.save(); ctx.translate(0, py + 388); ctx.scale(1, Math.max(0.02, e)); ctx.translate(0, -(py + 388)); // the top half unfolds
+  rr(px, py, 440, 388, 28, '#9aa0a7'); ctx.fillStyle = '#5a5f66'; ctx.fillRect(px + 24, py + 378, 392, 12);
+  const lx = px + 24, ly = py + 22, lw = 392, lh = 346; rr(lx - 6, ly - 6, lw + 12, lh + 12, 8, '#22262a'); ctx.fillStyle = paper; ctx.fillRect(lx, ly, lw, lh);
+  ctx.fillStyle = ink; ctx.fillRect(lx, ly, lw, 28); txt(m.title, lx + 8, ly + 14, 17, paper, 'left', MONO); txt(`${money(state.cash)} ${clockLabel()}`, lx + lw - 8, ly + 14, 15, paper, 'right', MONO);
+  let y = ly + 36;
+  if (m.log) { // Unc's fishing log
+    DATA.fish.forEach((f, i) => { const L = state.log[f.id], col = i % 2, row = Math.floor(i / 2), hidden = f.rarity === 5 && !L.caught; txt(L.caught ? `${f.short} x${L.caught}` : hidden ? '- - -' : `??? ${DATA.rarities[f.rarity]}`, lx + 8 + col * 196, y + 10 + row * 21, 15, ink, 'left', MONO, !!L.caught); });
+    y += 5 * 21 + 8; txt(`caught ${Object.values(state.log).reduce((n, L) => n + L.caught, 0)}  sold ${Object.values(state.log).reduce((n, L) => n + L.sold, 0)}`, lx + 8, y + 8, 15, ink, 'left', MONO); y += 24;
+  }
+  y = drawRows(m, m.rows(), lx + 4, y, lw - 8, ink, paper, 17, MONO);
+  const foot = m.msg || (m.foot ? m.foot() : 'TAB: back');
+  wrap(foot, 40).slice(0, 3).forEach((s, i, all) => txt(s, lx + 8, ly + lh - 14 - (all.length - 1 - i) * 18, 15, ink, 'left', MONO));
+  ctx.restore();
+}
+function drawDock(m) {
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(0, 0, W, H);
+  panel(330, 130, 620, 440, '#4a3524');
+  txt(m.title, 640, 168, 40, '#ffe27a', 'center', HEAD, false, 6);
+  ctx.fillStyle = '#e4dcb8'; ctx.fillRect(360, 198, 560, 3);
+  const rows = m.rows(); let y = 214;
+  rows.forEach((r, i) => { const on = i === m.sel, hgt = r.sub ? 58 : 40; if (on) { ctx.fillStyle = '#e4dcb8'; ctx.fillRect(356, y, 568, hgt - 4); } txt(r.label, 372, y + 17, 22, on ? '#2a1c12' : '#ffffff', 'left'); if (r.sub) txt(r.sub, 372, y + 40, 15, on ? '#2a1c12' : '#e4dcb8', 'left'); y += hgt; });
+  wrap(m.msg || 'W S: choose   SPACE or E: do it   TAB: back', 62).slice(0, 2).forEach((s, i) => txt(s, 640, 520 + i * 22, 16, '#ffe27a'));
+}
+function drawMap(m) { // the shack Map: the area's four ponds as pictures
+  ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, W, H);
+  panel(140, 84, 1000, 552, '#9a7446');
+  txt('NORTH EAST  -  POND MAP', 640, 124, 38, '#2a1c12', 'center', HEAD, false);
+  DATA.ponds.forEach((p, i) => {
+    const x = 172 + i * 240, y = 170, own = i === 0 || (i === 1 && state.picture2), sale = i === 1 && state.legendary && !state.picture2;
+    ctx.fillStyle = 'rgba(0,0,0,0.3)'; ctx.fillRect(x + 6, y + 6, 216, 300); ctx.fillStyle = own ? '#f4f1e6' : '#b9b4a6'; ctx.fillRect(x, y, 216, 300);
+    const gx = x + 13, gy = y + 14;
+    if (own || sale) { // the picture: sky, hills, pines, the water
+      const hue = [200, 215, 190, 230][i]; ctx.fillStyle = `hsl(${hue}, 45%, ${own ? 78 : 58}%)`; ctx.fillRect(gx, gy, 190, 180);
+      poly(ctx, [[gx, gy + 90], [gx + 50, gy + 50], [gx + 100, gy + 84], [gx + 150, gy + 44], [gx + 190, gy + 80], [gx + 190, gy + 110], [gx, gy + 110]], own ? '#3d5a45' : '#3a4a42');
+      for (let k = 0; k < 6; k++) poly(ctx, [[gx + 12 + k * 31, gy + 112], [gx + 24 + k * 31, gy + 66 + (k % 2) * 12], [gx + 36 + k * 31, gy + 112]], own ? '#234a2e' : '#26382c');
+      ctx.fillStyle = own ? '#5d8fa3' : '#4a6470'; ctx.fillRect(gx, gy + 110, 190, 70);
+      if (i === 0) { ctx.fillStyle = '#7b6a52'; ctx.fillRect(gx + 84, gy + 110, 12, 40); poly(ctx, [[gx + 126, gy + 148], [gx + 162, gy + 148], [gx + 172, gy + 138], [gx + 132, gy + 140]], '#d9622b'); }
+    } else { ctx.fillStyle = '#7d7a70'; ctx.fillRect(gx, gy, 190, 180); ctx.strokeStyle = '#3a3830'; ctx.lineWidth = 8; ctx.beginPath(); ctx.arc(gx + 95, gy + 78, 24, Math.PI, 0); ctx.stroke(); ctx.fillStyle = '#3a3830'; ctx.fillRect(gx + 61, gy + 78, 68, 54); }
+    if (own) poly(ctx, [[x + 100, y - 10], [x + 116, y - 10], [x + 122, y + 4], [x + 108, y + 14], [x + 94, y + 4]], '#d8322a'); // the push pin
+    wrap(own || sale ? p.name : 'LOCKED', 20).slice(0, 2).forEach((s, k) => txt(s, x + 108, y + 216 + k * 22, 17, '#2a1c12'));
+    txt(i === 0 ? 'YOU ARE HERE' : own ? 'PINNED' : sale ? 'PICTURE: ' + money(tune.map_picture) : i === 1 ? "land this pond's Legendary" : 'finish the pond before it', x + 108, y + 274, 14, own ? '#1f5a2a' : sale ? '#8a1f1f' : '#3a3830');
+  });
+  wrap(m.msg || (state.legendary && !state.picture2 ? 'SPACE: buy the picture of the next pond   TAB: back' : 'Pictures unlock the ponds. TAB: back'), 86).slice(0, 2).forEach((s, k) => txt(s, 640, 520 + k * 24, 18, '#2a1c12'));
+  txt('Catch a pond\'s Legendary to put the next pond\'s picture up for sale.', 640, 596, 16, '#2a1c12', 'center', FONT, false);
+}
+
+// ---- Scenes ------------------------------------------------------------------------------
+function view3D(o) {
+  if (!G) { clear('#27485a'); txt('3D could not start in this browser.', W / 2, H / 2, 22, '#ffffff'); return; }
+  G.render(o);
+}
+const scenes = {
+  figures: { // every fish and every piece of junk, side by side, named
+    update(dt) { state.t += dt; },
+    draw() {
+      clear('#16303c'); txt("LIL' PUFFIN' POND  -  the catch", W / 2, 34, 28, '#ffe27a', 'center', HEAD, false);
+      const items = [...DATA.fish.map(f => ({ kind: 'fish', f, name: f.short, rarity: f.rarity })), ...DATA.junk.map(j => ({ kind: 'junk', j, name: j.name, rarity: -1 }))];
+      items.forEach((it, i) => {
+        const x = 128 + (i % 5) * 256, y = 132 + Math.floor(i / 5) * 218;
+        ctx.fillStyle = '#5d8fa3'; ctx.fillRect(x - 112, y - 66, 224, 132);
+        drawItem(ctx, it, x, y, it.kind === 'junk' ? 0.9 : Math.min(1.25, 1.12 / it.f.art.L));
+        txt(it.name, x, y + 84, 17, '#ffffff'); txt(it.rarity < 0 ? 'Junk' : DATA.rarities[it.rarity], x, y + 106, 15, it.rarity < 0 ? '#b8c0c8' : DATA.rarityColors[it.rarity]);
+      });
+    },
+  },
+  title: {
+    update(dt) { state.t += dt; if (pressed('Enter') || pressed('Space')) { reset(); scene = 'play'; sfx.ok(); } },
+    draw() {
+      const a = state.t * 0.05 + 1.2;
+      view3D({ x: Math.cos(a) * 26, z: Math.sin(a) * 26 + 6, yaw: a + Math.PI / 2 + 0.5, pitch: -0.02, clock: tune.day_seconds * 0.9, t: state.t, speed: 0, cast: null });
+      ctx.fillStyle = 'rgba(8,12,18,0.42)'; ctx.fillRect(0, 0, W, H);
+      txt(TITLE, W / 2, 150, 124, '#ffb347', 'center', HEAD, false, 12);
+      txt('High Times = High Tips', W / 2, 238, 30, '#ffe27a', 'center', FONT, true, 5);
+      panel(250, 300, 780, 220);
+      CONTROLS.forEach((c, i) => txt(c, W / 2, 338 + i * 34, 19, '#ffffff'));
+      txt("Lil' Puffin' Pond sketch: fish as long as you like.", W / 2, 488, 17, '#e4dcb8');
+      if (Math.floor(state.t * 2) % 2 === 0) txt('ENTER: New Sesh', W / 2, 590, 40, '#ffffff', 'center', HEAD, false, 7);
+    },
+  },
+  play: {
+    update(dt) {
+      if (state.sleep > 0) { tickSleep(dt); return; }
+      if (state.menu) { tickMenu(); return; } // the world waits while the phone or the dock is open
+      if (pressed('KeyP') || pressed('Escape')) { scene = 'pause'; return; }
+      state.t += dt;
+      if (pressed('Tab')) { state.menu = phoneRoot(); state.phoneAnim = 0; sfx.flip(); return; }
+      if (pressed('KeyE') && nearDock() && (state.cast.mode === 'idle' || state.cast.mode === 'done')) { state.menu = dockMenu(); sfx.blip(); return; }
+      movePlayer(dt); tickCast(dt); tickMeters(dt);
+      if (pressed('KeyF')) smoke(); if (pressed('KeyQ')) nextStrain(); if (pressed('KeyR')) eat();
+    },
+    draw() {
+      view3D({ x: state.px, z: state.pz, yaw: state.yaw, pitch: state.pitch, clock: state.clock, t: state.t, speed: state.speed / tune.paddle_max, cast: state.cast, sat: vibrance(), blur: state.yak > 0 ? 2.2 + Math.sin(state.t * 2) * 0.8 : 0 });
+      drawHUD();
+      const m = state.menu; if (m) { if (m.kind === 'phone') drawPhone(m); else if (m.kind === 'dock') drawDock(m); else drawMap(m); }
+      if (state.sleep > 0) { ctx.globalAlpha = state.sleep > 1.2 ? (2.4 - state.sleep) / 1.2 : state.sleep / 1.2; clear('#000'); ctx.globalAlpha = 1; if (state.sleep < 1.9 && state.sleep > 0.5) txt(`DAY ${state.sleptApplied ? state.day : state.day + 1}`, W / 2, H / 2, 64, '#ffe27a', 'center', HEAD, false); }
+    },
+  },
+  pause: {
+    update() {
+      if (pressed('KeyP') || pressed('Escape')) scene = 'play';
+      if (pressed('KeyR')) { reset(); scene = 'play'; }
+      if (pressed('KeyL')) state.debug = !state.debug;
+    },
+    draw() {
+      scenes.play.draw(); ctx.fillStyle = 'rgba(0,0,0,0.5)'; ctx.fillRect(0, 0, W, H); panel(340, 190, 600, 330);
+      txt('PAUSED', W / 2, 240, 56, '#ffe27a', 'center', HEAD, false);
+      txt(state.gained || 'No fish logged yet', W / 2, 300, 20, '#ffffff');
+      txt('P: back to the pond', W / 2, 350, 20, '#ffffff'); txt('R: start over (clears this session)', W / 2, 384, 20, '#ffffff'); txt('M: mute', W / 2, 418, 20, '#ffffff');
+      txt(`L: Lost Legend debug is ${state.debug ? 'ON' : 'OFF'}`, W / 2, 468, 18, state.debug ? '#ff7ad9' : '#b8c0c8');
+    },
+  },
+};
+
+// ---- Loop: fixed step, frame time clamped ---------------------------------------------
+function step() {
+  if (pressed('KeyM')) { setMuted(!muted); hit.delete('KeyM'); }
+  scenes[scene].update(STEP); hit.clear();
+}
+let last, acc = 0, ALPHA = 1; // ALPHA: how far the frame is between the last two steps
+function tick() {
+  const now = clock.now();
+  acc += Math.min(now - last, 0.25); last = now; // a stall never fast-forwards the game
+  while (acc >= STEP) { step(); acc -= STEP; }
+  ALPHA = acc / STEP;
+  drawFrame();
+}
+function drawFrame() { scenes[scene].draw(); }
+function frame() { tick(); requestAnimationFrame(frame); }
+// A headless browser on a time budget runs timers but almost no animation frames: a timer
+// ticks when no frame has come for 100 ms on a visible page; a hidden tab stays paused.
+function timer() { if (document.visibilityState === 'visible' && clock.now() - last > 0.1) tick(); }
+
+// ---- What a check can read and drive (?manual=1 stops the loop; players never see it) ----
+window.game = {
+  get scene() { return scene; },
+  get state() { return state; },
+  press(code) { hit.add(code); },
+  hold(code, on) { on ? down.add(code) : down.delete(code); },
+  get events() { return events; }, // the loop steps; a check empties it
+  step(n = 1, draw = true, alpha = 1) {
+    for (let i = 0; i < n; i++) step();
+    if (draw) { ALPHA = alpha; drawFrame(); }
+  },
+};
+
+reset();
+scene = params.get('scene') || 'title';
+last = clock.now();
+if (params.get('manual') === '1') drawFrame();
+else { requestAnimationFrame(frame); setInterval(timer, 50); }
+</script>
+</body>
+</html>
