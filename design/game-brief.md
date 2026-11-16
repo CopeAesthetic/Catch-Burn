@@ -1,7 +1,8 @@
 # Game Brief: Catch n' Burn
 
-Status: **approved by the owner 2026-11-15** · built from the kickoff prompt v0.2 plus the owner's 14 decisions of 2026-11-15 and the five prototype answers below.
-Sources of truth: `docs/research/catch-n-burn-research.md` and `design/catch-n-burn/content-areas-fish-strains.md`.
+Status: **approved by the owner 2026-11-15** · built from the kickoff prompt v0.2 plus the owner's 14 decisions of 2026-11-15, the five prototype answers below, and the 12 answers given after playing the sketch (2026-11-16).
+**MVP target date: 2027-02-14** (owner works about 20 hours a week; set 2026-11-16 as a target to revisit, not a commitment).
+Sources of truth: `docs/research/catch-n-burn-research.md` and `design/catch-n-burn/content-areas-fish-strains.md`. The game's five pillars and its concept-format restatement are in `design/gdd/game-concept.md`.
 
 How to read this: plain text is the owner's wording from the kickoff prompt. **[DECIDED]** marks a rule the owner confirmed on 2026-11-15 that changes or adds to the prompt. **[PROPOSED]** marks something the studio added that the owner has not confirmed yet.
 
@@ -38,6 +39,7 @@ After the brief was approved, the owner's answers for the browser sketch (`proto
 3. Money: "quick menu is available but less convenient and rewarding than The Drop Box."
 4. End: "Fish as long as you like but once you catch the legendary you can buy the pictures on the map to the next pond in that area"
 5. Difficulty: "yeah i like that" (Commons easy, the Legendary takes a few tries)
+After play: "That felt great. good job."
 
 **[DECIDED]** Three real names stay as respectful tributes, each with a true story told by Unc: **Jack Herer** (Jack Herring), **Jenny Kush** (Jenny Kush Jig) and **Les Anderson** (Les Anderson's King). No jokes at their expense. No living real people and no real people as characters. Brand-derived names in the content file were replaced on 2026-11-15.
 
@@ -85,8 +87,8 @@ After the brief was approved, the owner's answers for the browser sketch (`proto
 | Seconds | Charge cast → wait → FISH ON → hook-set → needle stops → catch (rainbow flash) or escape |
 | Minutes | Paddle to shade, smoke (F), watch the Chill Meter, eat before Munchies max out |
 | A day | Fish → drop the catch in The Drop Box → order from The Guy and Jane → sleep → collect cash and deliveries from The Drop Box → load the Cooler |
-| A pond | Commons → Reggie → Uncommons → Home Grown → Rares → Top Shelf → Epic + Legendary → next pond pinned on the shack Map |
-| An area | 4 ponds → 4th pond's Legendary → buy a ticket from Joe → new shack, dock and Map |
+| A pond | Commons → Reggie → Uncommons → Home Grown → Rares → Top Shelf → Epic + Legendary → all 9 logged → buy the next pond's picture on the shack Map |
+| An area | 4 ponds, all 36 species logged → buy a ticket from Joe → new shack, dock and Map |
 | The game | 8 areas, 288 fish → Lost Legends → Straight Fire victory laps |
 
 ## Goal & fail state
@@ -100,6 +102,8 @@ After the brief was approved, the owner's answers for the browser sketch (`proto
 - Munchies maxed → cannot fish or smoke until you eat.
 - 10 beers → blackout, wake up with 0 fish and 0 weed in your inventory (carried fish and Cooler contents only).
 - Broke → Quick Sell at a decreased value.
+- Midnight → you drift off and wake up in bed.
+- Fish not in The Drop Box when you sleep → spoiled, Quick Sell price only.
 
 ## Features
 
@@ -107,7 +111,7 @@ After the brief was approved, the owner's answers for the browser sketch (`proto
 
 **Main menu** — as in *First minute*.
 
-**In-game Flip Phone (Tab)** — a clickable flip-phone HUD that looks and behaves like a 2008 flip phone (opening animation, keypad, tiny LCD, ringtones).
+**In-game Flip Phone (Tab)** — a clickable flip-phone HUD that looks and behaves like a 2008 flip phone (opening animation, keypad, tiny LCD, ringtones). **[DECIDED]** It works with the mouse and with keys, and the world keeps running while it is open.
 
 - **Menu** → quit menu with 3 options:
   1. **Turn & Burn** — Save & Quit
@@ -115,7 +119,7 @@ After the brief was approved, the owner's answers for the browser sketch (`proto
   3. **Weather Report** — Help: current controls and useful tips
 - **Speed Dial** → contacts:
   1. **The Guy** — the dealer. Buy grams of strains with cash. Orders arrive in **The Drop Box** inside the shack **after you sleep**. Once collected, load them into the Cooler to smoke on the water.
-  2. **Jimmy (Fish Guy)** — sell fish for cash. **Appraise** caught fish for a fee to see their value; **Quick Sell** for instant (lower) cash when you're broke or don't want to end the day. **[DECIDED]** To sell at full value you have to drop the fish in **The Drop Box**; Jimmy pays overnight, while you sleep. Quick Sell is instant and pays a decreased value (**[PROPOSED]** about 60%, to tune).
+  2. **Jimmy (Fish Guy)** — sell fish for cash. **Appraise** caught fish for a fee to see their value; **Quick Sell** for instant (lower) cash when you're broke or don't want to end the day. **[DECIDED]** To sell at full value you have to drop the fish in **The Drop Box**; Jimmy pays overnight, while you sleep. Quick Sell is instant and pays a decreased value (**[DECIDED]** about 60%, to tune). **[DECIDED]** Appraise: a fish's true value is hidden until Jimmy appraises it. Unappraised fish sell at a flat price for their rarity; appraised fish sell at their real value.
   3. **Joe (Travel Guy)** — buy plane tickets with cash to newly unlocked areas, and pick which area to fish. **[DECIDED]** Joe handles areas only; ponds inside an area are reached from the shack **Map**.
   4. **Jane (Yo Puff Delivery)** — shop with tabs: **Fishing Items**, **Smoking Items**, **Food Items** (catalogue in the content file). Items scale by rarity.
   5. **John (Unc)** — fishing log: every species caught, how many caught and sold. Button at the bottom: **"Ask Unc"** → random inspirational fishing quote or useful tip. **[DECIDED]** Unc also tells **Unc's stories**: the true story behind a tribute name once you have caught or bought it (drafts in the content file). Lost Legends appear in the log as trophy photos.
@@ -125,19 +129,23 @@ After the brief was approved, the owner's answers for the browser sketch (`proto
 
 First-person, **WASD** to move, **E** to interact.
 
+**[DECIDED] Starting kit:** Grandpa's Cane Pole, the Lunchbox cooler, the Rental Kayak, a One Hitter and $0.
+
 Inside the shack:
-1. **Bed** — sleep to skip the night (deliveries arrive while you sleep).
-2. **Fridge** — food and beer. Food lowers munchies. Beer makes you drunk; **10 beers = screen goes black, you wake up with 0 fish and 0 weed** in your inventory.
+1. **Bed** — sleep to skip the night (deliveries arrive while you sleep). **[DECIDED]** You can fish till midnight. At midnight you drift off, wake up in your bed, and miss the chance to sell. Fish that are not in The Drop Box when you sleep spoil: a spoiled fish only fetches the Quick Sell price, even in The Drop Box. **[DECIDED]** A day lasts about 15–20 minutes from sunrise to midnight, as a starting value to tune. **[PROPOSED]** Night has no shade sweet spots and slower bites; you can go to bed at any hour; deliveries still arrive after a drift-off.
+2. **Fridge** — food and beer. Food lowers munchies. Beer makes you drunk; **10 beers = screen goes black, you wake up with 0 fish and 0 weed** in your inventory. **[DECIDED]** The fridge is the unlimited storage for food.
 3. **Computer** — opens Speed Dial, re-skinned as a Gmail-style webmail called **"FishMail"**.
 4. **The Drop Box** — collect all deliveries. **[DECIDED]** It works both ways: drop fish in to sell them to Jimmy overnight, and collect the cash with your deliveries after you sleep.
-5. **Map** **[DECIDED]** — a wall map of the area. It shows the area's 4 ponds as pictures, pins each one as it unlocks, and is how you travel to them. Once you catch a pond's Legendary you can buy the picture of the next pond in that area on the Map; buying it is what opens that pond.
+5. **Dresser** **[DECIDED]** — unlimited storage for weed and for cosmetics. **[DECIDED]** Cosmetics are four kinds, all earned by fishing, never bought (owner decision 2026-11-16): clothes for your fisherman, kayak and rod skins, shack decorations, and smoking gear skins. They come from milestones such as finishing a pond or an area, landing a trophy, or a Lost Legend. **[PROPOSED]** Which milestone gives which cosmetic is still to be designed.
+6. **Map** **[DECIDED]** — a wall map of the area. It shows the area's 4 ponds as pictures, pins each one as it unlocks, and is how you travel to them. Once you catch a pond's Legendary you can buy the picture of the next pond in that area on the Map; buying it is what opens that pond.
 
 On the dock:
-- **Tackle Box** → **"Smoke & Tackle"** menu to equip fishing and smoking items.
-- **Cooler** → **"Stash"** menu to choose which strains and food to bring on the water. Limited slots; bigger coolers from Jane.
+- **Tackle Box** → **"Smoke & Tackle"** menu to equip fishing and smoking items. **[DECIDED]** Five slots: rod, line, lure, smoking item, and a mask slot for the gas mask.
+- **Cooler** → **"Stash"** menu to choose which strains and food to bring on the water. Limited slots; bigger coolers from Jane. **[DECIDED]** The Cooler is the only limit on what goes on the water; the shack's fridge and dresser are unlimited.
+- **Stringer** **[DECIDED]** — the fish you can carry in the kayak are limited by your stringer's slots; bigger stringers from Jane.
 - **Kayak** → starts fishing. Loading screen = **cutscene of climbing into the kayak and pushing off the dock**.
 
-**Every area has its own home base:** when you fly to a new area you get a **new shack and dock** there, styled for the region (e.g., a Florida stilt fish camp, a Midwest A-frame, a PNW cedar cabin, a Southwest adobe casita, an Island plantation-style cottage), with the same interactables (bed, fridge, computer, Drop Box, Map, tackle box, cooler, kayak). Pond 1 of each area is the home pond. **[DECIDED]** The other 3 ponds are reached from the **Map** in the shack, which replaces the dock travel menu and paddling between ponds; each pond is its own level.
+**Every area has its own home base:** when you fly to a new area you get a **new shack and dock** there, styled for the region (e.g., a Florida stilt fish camp, a Midwest A-frame, a PNW cedar cabin, a Southwest adobe casita, an Island plantation-style cottage), with the same interactables (bed, fridge, dresser, computer, Drop Box, Map, tackle box, cooler, kayak). Pond 1 of each area is the home pond. **[DECIDED]** The other 3 ponds are reached from the **Map** in the shack, which replaces the dock travel menu and paddling between ponds; each pond is its own level.
 
 ### The Pond (fishing)
 
@@ -162,8 +170,8 @@ On the dock:
 1. Sober, you can only hook that pond's **Commons**. Catch all 3 → **Reggie** unlocks at The Guy.
 2. While under a **Reggie** strain from that pond you can hook its **Uncommons**. Catch both → **Home Grown** unlocks.
 3. While under **Home Grown** you can hook its **Rares**. Catch both → **Top Shelf** unlocks.
-4. While under **Top Shelf** you can hook its **Epic** and **Legendary**. Catch both → the **next pond** unlocks. **[DECIDED]** The unlock is bought: once the Legendary is caught, the next pond's picture goes on sale on the shack Map.
-5. Catching the 4th pond's Legendary unlocks the **next area** (buy the ticket from Joe).
+4. While under **Top Shelf** you can hook its **Epic** and **Legendary**. Catch both → the **next pond** unlocks. **[DECIDED]** The unlock is bought, and it needs the whole pond: every Common, Uncommon, Rare, Epic and Legendary species in the pond (all 9) must be caught before the next pond's picture goes on sale on the shack Map.
+5. Catching the 4th pond's Legendary unlocks the **next area** (buy the ticket from Joe). **[DECIDED]** The next area can be unlocked once all 9 of those species are caught in every one of the area's 4 ponds (36 in all).
 6. **Top Shelf YAK LOCK bonus:** smoke a pond's Top Shelf until the Chill Meter hits 100% → your next cast is a guaranteed 50/50 Epic-or-Legendary from that pond. **[DECIDED]** The bonus needs the extra hit: reach 100%, then smoke once more to go YAK LOCKED.
 
 **[DECIDED] What each tier lets you hook:**
@@ -173,7 +181,7 @@ On the dock:
 
 **Areas, in difficulty order:** North East → Mid Atlantic → South East → Mid West → Pacific Northwest → West Coast → South West → US Islands. Every area has real regional fish, real popular lakes, and regional strains — all pun-named (see the content file).
 
-**Lost Legends (endgame):** hidden until all **288** non-Lost-Legend fish (8 areas × 4 ponds × 9) are caught. There is **one Lost Legend per pond (32 total)**. To hook a pond's Lost Legend, smoke the **Top Shelf of the next pond in the same area** (Pond 1 → needs Pond 2's Top Shelf, Pond 2 → Pond 3's, Pond 3 → Pond 4's); **each area's Pond 4 needs the Top Shelf from Pond 1 of that same area**. Your next cast hooks the Lost Legend. Catching it unlocks that pond's **Straight Fire** strain. Lost Legends are photographed and released, not sold. **[DECIDED]** Confirmed; the reward is the Straight Fire unlock plus a trophy photo in Unc's log.
+**Lost Legends (endgame):** hidden until all **288** non-Lost-Legend fish (8 areas × 4 ponds × 9) are caught. There is **one Lost Legend per pond (32 total)**. To hook a pond's Lost Legend, smoke the **Top Shelf of the next pond in the same area** (Pond 1 → needs Pond 2's Top Shelf, Pond 2 → Pond 3's, Pond 3 → Pond 4's); **each area's Pond 4 needs the Top Shelf from Pond 1 of that same area**. Your next cast hooks the Lost Legend. Catching it unlocks that pond's **Straight Fire** strain. Lost Legends are photographed and released, not sold. **[DECIDED]** Confirmed; the reward is the Straight Fire unlock plus a trophy photo in Unc's log. **[DECIDED]** Lost Legends are separate from pond and area unlocks: they gate nothing, and are a victory lap after completing an area. **[DECIDED]** An area's 4 Lost Legends open as soon as that area's 36 other fish are caught; this replaces waiting for all 288 (owner, 2026-11-16).
 
 **[DECIDED] Straight Fire is the victory-lap strain:** under a pond's Straight Fire, every rarity in that pond can bite, with boosted odds and boosted sale value.
 
@@ -193,6 +201,10 @@ On the dock:
 | smoke again at 100% | **YAK LOCKED** | screen blurs, "YAK LOCKED" text; vibrance +100% |
 
 **[DECIDED]** Band edges adjusted so each percentage sits in one state (the prompt had 25, 50 and 75 in two).
+
+**[DECIDED]** YAK LOCKED lasts 60 seconds and makes fishing harder (the blur, and a tougher needle).
+
+**[DECIDED]** Smoking a second strain while one is in effect: the last one smoked takes over, and the meter carries on from where it is.
 
 **Hunger → Munchies meter (one meter, two phases):**
 - It starts as **Hunger**, full, and depletes over time. **Smoking drains it faster** — this is the anti-spam balance on smoking.
@@ -228,7 +240,7 @@ One `/design-system` GDD each:
 8. Strain database & unlock chain
 9. Chill Meter & visual effects
 10. Munchies, hunger & drunk meters
-11. Inventory, Cooler & Tackle Box
+11. Inventory, Cooler, stringer & Tackle Box, with the fridge and dresser as home storage
 12. Economy (fish prices, appraisal, quick sell, strain prices, tickets)
 13. Shop (Jane)
 14. Deliveries & Drop Box
@@ -241,6 +253,8 @@ One `/design-system` GDD each:
 21. Audio (ambient ponds per region, retro UI sounds)
 
 ## Keep
+
+- cast → needle → smoke: "That felt great." *(you said)* · pins: bite_open 5, bite_shade 2, hookset_window 1.5, needle_start 1, cast_charge 1.3
 
 From the 2000s fishing games (research brief §3):
 - The retro power-meter cast and the bite prompt.
@@ -284,7 +298,7 @@ From friendslop (research brief §6): cheap price, low skill floor, low-fi 3D, p
 
 ---
 
-**Kill condition:** **[PROPOSED — owner to set]** If the prototype's cast → bite → needle → smoke loop is not fun for 15 minutes on one pond after two tuning passes, stop and redesign the needle and the Chill / Munchies balance before any 3D work.
+**Kill condition:** **[PROPOSED — owner to set]** If the prototype's cast → bite → needle → smoke loop is not fun for 15 minutes on one pond after two tuning passes, stop and redesign the needle and the Chill / Munchies balance before any 3D work. **Result 2026-11-16:** the owner played the browser sketch and said the loop "felt great"; the kill condition did not trigger.
 
 **Who it's for / what they feel:** Friend groups who play friendslop, and anyone with a soft spot for 2000s budget fishing games. They should feel chill, a bit silly, and quietly hooked on filling the log. **[PROPOSED]**
 

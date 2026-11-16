@@ -13,6 +13,7 @@
 3. Money: "quick menu is available but less convenient and rewarding than The Drop Box."
 4. End: "Fish as long as you like but once you catch the legendary you can buy the pictures on the map to the next pond in that area"
 5. Difficulty: "yeah i like that" (Commons easy, the Legendary takes a few tries)
+After play: "That felt great. good job."
 
 **Pitch:** Paddle a kayak around a misty Maine pond, hook fish with a needle mini-game, and get higher to hook rarer ones.
 
@@ -76,7 +77,7 @@ Commons are easy. The first real trouble comes around minutes 3–5: your first 
 - multiplayer · later
 
 ## Keep
--
+- cast → needle → smoke: "That felt great." *(you said)* · pins: bite_open 5, bite_shade 2, hookset_window 1.5, needle_start 1, cast_charge 1.3
 
 ## Avoid
 - Repetitive waiting, unresponsive controls, too-easy fights, long loads.
