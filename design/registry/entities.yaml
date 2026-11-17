@@ -135,10 +135,10 @@ formulas:
       - chill_state
       - tier
     output_range: [0, 1]
-    expression: "effective_weight(r) / sum(effective_weight); effective_weight = base_weight[tier][r] * (1 + state_bonus * (chill_state - 1)) for boosted rarities"
-    notes: "Which rarity bites under a strain tier. chill_state comes from Chill Meter and Smoking, tier from Strains and Unlock Chain. Starting values are the browser sketch's, untuned."
+    expression: "effective_weight(r) / sum(effective_weight); chill_mult = 1 + state_bonus * (chill_state - 1); effective_weight = base_weight[tier][r] * (chill_mult if boosted) * (chill_mult if r has an unlogged entry)"
+    notes: "Which rarity bites under a strain tier. chill_state comes from Chill Meter and Smoking, tier from Strains and Unlock Chain, the logged set from Fishing Log via Bite Timing. Starting values are the browser sketch's, untuned. With an empty or complete log the missing term cancels."
     added: 2026-11-16
-    revised: ""
+    revised: "2026-11-16: missing-rarity term added (owner decision; higher Chill now fills the log faster)"
 
   - name: entry_chance
     status: active
@@ -297,6 +297,17 @@ constants:
     value: 3
     unit: multiplier
     notes: "The most a lure may multiply an entry's pick weight. Gear and Item Database owns the per-lure sizes under this cap."
+    added: 2026-11-16
+    revised: ""
+
+  - name: yak_legendary_share
+    status: active
+    source: design/gdd/fish-database-spawn-tables.md
+    referenced_by:
+      - design/gdd/fish-database-spawn-tables.md
+    value: 0.5
+    unit: share of paid YAK LOCK bonuses
+    notes: "Share of paid YAK LOCK bonuses (tier 3 or 4) that bring the Legendary rather than the Epic. Safe range 0.2-0.8 (owner decision 2026-11-16)."
     added: 2026-11-16
     revised: ""
 

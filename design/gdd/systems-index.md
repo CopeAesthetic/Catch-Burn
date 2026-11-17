@@ -264,7 +264,7 @@ Chill Meter & Smoking (14) and Hunger, Munchies & Drunk (15) are designed back t
 | Design docs started | 2 |
 | Design docs reviewed | 2 |
 | Design docs approved | 2 |
-| MVP systems designed | 2/19 (Fish Database: Approved at the fourth review, 2026-11-16, lean, 0 blockers; index rows, brief wording and Tuning Knobs done after approval; Gear & Item Database: Approved at the third review, 2026-11-16, lean, 0 blockers; recommended items 1–4 and Open Question 1 settled after approval) |
+| MVP systems designed | 2/19 (Fish Database: Approved at the fourth review, 2026-11-16, lean, 0 blockers; index rows, brief wording and Tuning Knobs done after approval; later the same day, owner decisions added a missing-rarity Chill term, the YAK split knob, rule 11 and AC-45 to AC-49, not re-reviewed; Gear & Item Database: Approved at the third review, 2026-11-16, lean, 0 blockers; recommended items 1–4 and Open Question 1 settled after approval) |
 | Vertical Slice systems designed | 0/6 |
 
 ---

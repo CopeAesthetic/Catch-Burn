@@ -265,7 +265,7 @@ All fish, strains, gear and food live in data files, never hard-coded.
 - The MVP target (2027-02-14, about 13 weeks at 20 hours a week) has to cover 18 more MVP design documents as well as the Godot build. Only one MVP system (Fish Database) is designed so far.
 
 ### Open Questions
-- Nine of the 32 Lost Legends are labelled folklore in the content file and none has been verified as an existing local legend. Pillar 3 requires each to be verified or replaced.
+- ~~Nine Lost Legends unverified.~~ Resolved 2026-11-16: checked against web sources. Three are kept as real legends or records, three are replaced with real records from the same water, two are resized to real reports, and one (Abuelo Guavina) is kept as a stated invention. Details are in the content file and Fish Database Open Question 9.
 - Which milestone gives which cosmetic?
 - Night fishing details (no shade, slower bites), bed at any hour, and stringer slot counts are still proposals. Day length is set at about 15–20 minutes as a starting value.
 - Full list: every **[PROPOSED]** and **[OPEN]** tag in `design/game-brief.md`.

@@ -63,3 +63,8 @@ commands:
   test: '"/Applications/Godot.app/Contents/MacOS/Godot" --headless -s -d --remote-debug tcp://127.0.0.1:0 res://addons/gdUnit4/bin/GdUnitCmdTool.gd -a res://tests --ignoreHeadlessMode'
   run: '"/Applications/Godot.app/Contents/MacOS/Godot" --path . --windowed --resolution 1280x720'
   smoke: '"/Applications/Godot.app/Contents/MacOS/Godot" --headless --quit-after 5'
+
+# Owner decision 2026-11-16: 60 fps on Steam Deck-class hardware.
+performance:
+  target_framerate: 60
+  frame_budget_ms: 16.67

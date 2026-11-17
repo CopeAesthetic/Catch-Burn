@@ -70,7 +70,7 @@ The stat keys are this system's list, and a modifier naming any other key fails 
 | `cast_distance` | percent | Casting & Tangle | How far a full charge throws |
 | `tangle_escape` | percent | Casting & Tangle | How fast mashing frees a tangle |
 | `bite_wait` | percent | Bite Timing | The average wait before FISH ON (5 s open, 2 s shade) |
-| `sweet_spot_bonus` | percent | Bite Timing | How much shade shortens the wait |
+| `sweet_spot_bonus` | percent | Bite Timing | How much shade shortens the wait. The percent applies to the 3 s that shade saves (5 s open − 2 s shade): +20% makes the gap 3.6 s, so the shade wait becomes 1.4 s (owner decision 2026-11-16) |
 | `hookset_window` | flat | Bite Timing | The 1.5 s window to hit Space on FISH ON |
 | `needle_speed` | percent | Reel-in Needle | How fast the needle sweeps (negative is slower, easier) |
 | `green_zone` | percent | Reel-in Needle | Width of the green (+1) zone |
@@ -85,7 +85,7 @@ The stat keys are this system's list, and a modifier naming any other key fails 
 | `stringer_slots` | flat | Inventory & Storage | Fish carried on the water |
 | `munchies` | flat | Hunger, Munchies & Drunk | Change to Munchies when eaten (negative lowers it) |
 | `hunger` | flat | Hunger, Munchies & Drunk | Change to Hunger when eaten |
-| `drunk` | flat | Hunger, Munchies & Drunk | Change to the Drunk meter (beer +10%) |
+| `drunk` | flat | Hunger, Munchies & Drunk | Change to the Drunk meter (beer +10 points). Munchies, Hunger and Drunk each run 0–100 points (owner decision 2026-11-16) |
 
 **Flat keys have a ceiling.** A flat key that several equipped items can stack (`hookset_window`, `line_forgiveness`) carries a `flat_max` in the data: the most its summed flats may add (Formula 1; owner decision 2026-11-16). The ladder keys are bounded by their top step. `munchies`, `hunger` and `drunk` are per-item amounts applied once when the item is eaten, never summed across items, so they carry none.
 
@@ -394,7 +394,7 @@ Tests that load lure data use a fixture Fish Database (tag list `bass`, `panfish
 
 **Across systems**
 
-- **AC-23** — automated, integration with the Fish Database, seeded — **GIVEN** tier 3 at Lil' Puffin' Pond and no flag raised (no YAK LOCK bonus, no Lost Legend due), **WHEN** 100,000 catches are requested once with no gear and once with each rod, each lure, each smoking item and the Gas Mask in turn, at Chill state 1 and again at Chill state 4, **THEN** Legendary and Epic stay inside the Fish Database's bands for that state every time (state 1: 9.5–10.5% and 15.4–16.6%; state 4: 14.9–15.9% and 24.0–25.2%). (Pillar 1: at a given Chill state, gear never changes rarity odds; smoking items change them only by changing the state.)
+- **AC-23** — automated, integration with the Fish Database, seeded — **GIVEN** tier 3 at Lil' Puffin' Pond, an empty logged set, and no flag raised (no YAK LOCK bonus, no Lost Legend due), **WHEN** 100,000 catches are requested once with no gear and once with each rod, each lure, each smoking item and the Gas Mask in turn, at Chill state 1 and again at Chill state 4, **THEN** Legendary and Epic stay inside the Fish Database's bands for that state every time (state 1: 9.5–10.5% and 15.4–16.6%; state 4: 14.9–15.9% and 24.0–25.2%). (Pillar 1: at a given Chill state, gear never changes rarity odds; smoking items change them only by changing the state.)
 - **AC-24** — automated — **GIVEN** a `trout` lure with bias 3 equipped, **WHEN** Bite Timing asks for the equipped lure's tag and bias, **THEN** it receives tag `trout` and bias 3; and **GIVEN** the lure slot is empty, **THEN** it receives none.
 - **AC-25** — UI, retained screenshot, needs the Smoke & Tackle menu — **GIVEN** the Spincast Combo, **WHEN** its card is shown, **THEN** it reads "+10% cast distance", generated from the data.
 - **AC-26** — automated, integration with the Fish Database, seeded — **GIVEN** tier 1, **WHEN** 10,000 catches are requested once with each lure and each smoking item equipped in turn, **THEN** every catch is Common or Uncommon. (Pillar 1: no item opens a rarity.)
@@ -421,7 +421,7 @@ Is a +10% step noticeable within a few catches; does the Dab Rig with the Gas Ma
 
 **Gaps found by the QA check**
 
-- **No performance criterion**: the project has no budget set. A stat resolve is a few additions, but there is nothing to test it against.
+- **No performance criterion yet**: the budget is now set (60 fps on Steam Deck). A stat resolve is a few additions, so a criterion like the Fish Database's AC-49 can be added when a build exists on that hardware.
 - **AC-1 cannot pass yet**: lines, most lures, The Unc Stick, kayaks and foods have words, not numbers (Open Questions 2–4 and 6).
 - **AC-18 to AC-20, AC-25, AC-30 and AC-31 wait on other systems.**
 
@@ -438,9 +438,9 @@ Is a +10% step noticeable within a few catches; does the Dab Rig with the Gas Ma
 | 7 | **Regional legendary snacks**: sold only in their region, or everywhere once that region is open? | Shop and Economy docs | Alpha |
 | 8 | **JSON or Godot resource files?** Shared with the Fish Database. | Architecture decision | Technical Setup |
 | 9 | **Feasibility is unchecked**: `docs/engine-reference/godot/modules/` has no scripting reference. | Technical director | Technical Setup |
-| 10 | **No performance budget.** | Owner, via `/project-settings` | Before the first build |
+| 10 | ~~**No performance budget.**~~ **Closed 2026-11-16**: 60 fps on Steam Deck (16.67 ms), in `project.yaml`. | Owner | Done |
 | 11 | **Item prices**, including The Unc Stick's late-game price. | Economy doc | When that doc is written (20th) |
 | 12 | ~~**A closed species-tag list.**~~ **Closed 2026-11-16**: Fish Database rule 9 defines one closed tag list, which data rule 4 and AC-5 check lure tags against. Writing the full list is content work (Fish Database Open Question 2; lure tags, Open Question 2 here). | Fish Database & Spawn Tables doc | Done |
 | 13 | **`flat_max` values** for `hookset_window` and `line_forgiveness`. The owner chose a per-key ceiling and its safe range (0.1–1.0 s and 1–4, 2026-11-16); the starting +0.5 s and +2 are proposals. | Owner, with the Bite Timing and Reel-in Needle docs | When those docs are written |
-| 14 | **Units of the meter keys** (`munchies`, `hunger`, `drunk`) and the base behind `sweet_spot_bonus` (the 3 s gap, or a share). | Hunger doc; Bite Timing doc | When those docs are written |
+| 14 | ~~**Units of the meter keys** and the base behind `sweet_spot_bonus`.~~ **Closed 2026-11-16 (owner)**: each meter runs 0–100 points, and `sweet_spot_bonus` applies to the 3 s gap. The Hunger and Bite Timing docs must adopt both. | Owner | Done |
 | 15 | **Can fast smoking gear farm the YAK LOCK bonus?** The Dab Rig with the Gas Mask reaches YAK LOCKED fastest, and each bonus pays an Epic or Legendary at tier 3 or 4. How often the bonus is earned, and whether it lapses, bounds this. | Chill Meter & Smoking doc | When that doc is written |

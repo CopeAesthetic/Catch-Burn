@@ -29,6 +29,21 @@ Source of truth for regional content. Built from `docs/research/catch-n-burn-res
 | Legendary | Landlocked Atlantic Salmon |
 | Lost Legend | Silver Trout — extinct; last known from Dublin Pond, NH (1930s) |
 
+Game data for this pond (owner 2026-11-16). Weights are in pounds and come from the browser sketch. Tags are lure families from the Fish Database's starting list (rule 9).
+
+| Fish | Rarity | Weight (lb) | Tags |
+|---|---|---|---|
+| Pumpkinseed | Common | 0.2–0.9 | panfish |
+| Yellow Perch | Common | 0.3–1.4 | panfish |
+| Brown Bullhead | Common | 0.5–2.2 | catfish |
+| Chain Pickerel | Uncommon | 1.0–4.5 | pike |
+| Black Crappie | Uncommon | 0.4–2.3 | panfish |
+| Smallmouth Bass | Rare | 1.2–5.5 | bass |
+| Largemouth Bass | Rare | 1.5–8.0 | bass |
+| Brook Trout | Epic | 0.8–4.0 | trout |
+| Landlocked Atlantic Salmon | Legendary | 3.0–12.0 | trout |
+| Silver Trout | Lost Legend | 0.6–1.6 | trout |
+
 Strains: Reggie **Bluegill Dream** (Blue Dream) · Home Grown **Devil Driftwood** (Devil Driver, Maine budtender pick) · Top Shelf **Trout Runtz** (Runtz, ME/VT top seller) · Straight Fire **Silver Smoke** (fictional)
 
 ### Pond 1-2: **Lake Winnipe-SMOKE-ee** (Lake Winnipesaukee, NH)
@@ -63,7 +78,7 @@ Strains: Reggie **Bananas Boat** (Bananas, MA) · Home Grown **PK Crash-n-Splash
 | Rare | Sauger · Mooneye |
 | Epic | Muskellunge |
 | Legendary | Lake Sturgeon |
-| Lost Legend | Champ — the lake's famous monster (folklore) |
+| Lost Legend | Champ — the lake's famous monster (real local legend, checked 2026-11-16: recorded sightings since the 1800s) |
 
 Strains: Reggie **Gela-TROUT-o** (Gelato) · Home Grown **Memory Lost Lure** (Memory Loss, NY) · Top Shelf **Chem-Dogfish** (Chemdawg) · Straight Fire **Champ's Breath** (fictional)
 
@@ -79,7 +94,7 @@ Strains: Reggie **Gela-TROUT-o** (Gelato) · Home Grown **Memory Lost Lure** (Me
 | Rare | Largemouth Bass · Tiger Muskie |
 | Epic | Hybrid Striped Bass |
 | Legendary | Muskellunge |
-| Lost Legend | The Morris Canal Eel — an ancient American eel from the old canal days (folklore) |
+| Lost Legend | The '78 Hopatcong Cat — New Jersey's state-record channel catfish, 33 lb 3 oz, caught in Lake Hopatcong in 1978 (real record; replaces the unsourced Morris Canal Eel, owner 2026-11-16) |
 
 Strains: Reggie **Wedding Bait** (Wedding Cake) · Home Grown **Orange Push Popper** (Orange Push Pop, NJ) · Top Shelf **Lemon Cherry Jig-ato** (Lemon Cherry Gelato, NJ #1 Dec 2025) · Straight Fire **Hop-a-Haze** (fictional)
 
@@ -131,7 +146,7 @@ Strains: Reggie **Northern Lights Out** (Northern Lights) · Home Grown **White 
 | Rare | Bowfin · Channel Catfish |
 | Epic | Common Snook |
 | Legendary | Florida Largemouth Bass (double-digit) |
-| Lost Legend | The Glades Ghost — an all-white (leucistic) Florida largemouth (folklore) |
+| Lost Legend | The Okeechobee Lunker — a giant Florida largemouth from the lake famed for more 5-lb-plus bass than any other (real reputation, no weight claimed; replaces the unsourced Glades Ghost, owner 2026-11-16) |
 
 Strains: Reggie **Pineapple X-Bass** (Pineapple Express, FL top seller) · Home Grown **Strawberry Cough-n-Cast** (Strawberry Cough) · Top Shelf **Mi-BASS-osa** (Mimosa) · Straight Fire **Sawgrass Sunrise** (fictional)
 
@@ -143,7 +158,7 @@ Strains: Reggie **Pineapple X-Bass** (Pineapple Express, FL top seller) · Home 
 | Rare | Suwannee Bass · Sunshine Bass |
 | Epic | Atlantic Tarpon |
 | Legendary | Gulf Sturgeon (the famous jumping sturgeon) |
-| Lost Legend | Whiskey Barrel — a 9-ft Gulf sturgeon (folklore) |
+| Lost Legend | Whiskey Barrel — a 7-ft jumping Gulf sturgeon, true to the Suwannee's real leaping sturgeon (the nickname is invented; owner 2026-11-16) |
 
 Strains: Reggie **Grape Ape-Gar** (Grape Ape) · Home Grown **Purple Punch Line** (Purple Punch) · Top Shelf **Do-Si-Dos Fishin'** (Do-Si-Dos) · Straight Fire **Spring Water Sherb** (fictional)
 
@@ -155,7 +170,7 @@ Strains: Reggie **Grape Ape-Gar** (Grape Ape) · Home Grown **Purple Punch Line*
 | Rare | Spotted Bass · Walleye |
 | Epic | Striped Bass |
 | Legendary | Shoal Bass |
-| Lost Legend | The Buford Dam Brown — a giant brown trout from the cold Chattahoochee tailwater (folklore) |
+| Lost Legend | The Buford Dam Brown — a giant brown trout from the cold Chattahoochee tailwater (real record, checked 2026-11-16: Georgia's state-record brown, 20 lb 14 oz, caught below Buford Dam in 2014) |
 
 Strains: Reggie **Lemon Haze Lure** (Lemon Haze) · Home Grown **Durban Poison Dart** (Durban Poison) · Top Shelf **Banana Kush Bobber** (Banana Kush) · Straight Fire **Peach Fuzz Pre-Roll** (fictional)
 
@@ -195,7 +210,7 @@ Strains: Reggie **Triple Burger Bait** (Triple Burger, MO top seller) · Home Gr
 | Rare | Walleye · Smallmouth Bass |
 | Epic | Northern Pike |
 | Legendary | Muskellunge |
-| Lost Legend | Paul Bunyan's Walleye (folklore) |
+| Lost Legend | Paul Bunyan's Walleye (real local legend, checked 2026-11-16: Garrison's tale and giant walleye statue on the lake; older Ojibwe tellings star Nanabozho) |
 
 Strains: Reggie **Master Kush Muskie** (Master Kush) · Home Grown **Mac & Cheese-head Bait** (Mac and Cheese) · Top Shelf **Original Z Skiff** (The Original Z) · Straight Fire **Ten Thousand Lakes Loud** (fictional)
 
@@ -391,7 +406,7 @@ Strains: Reggie **Jenny Kush Jig** (Jenny Kush, NV — tribute name, see Unc's s
 | Rare | Largemouth Bass · Smallmouth Bass |
 | Epic | Snakehead |
 | Legendary | Peacock Bass (Tucunaré) |
-| Lost Legend | The Golden Tucunaré — a solid-gold peacock bass (folklore) |
+| Lost Legend | The '74 Wilson Cat — Hawaiʻi's state-record channel catfish, 43 lb 13 oz, caught in Lake Wilson in 1974 (real record; replaces the unsourced Golden Tucunaré, owner 2026-11-16) |
 
 Strains: Reggie **Hawaiian Hazy Hook** (Hawaiian Haze) · Home Grown **Puna Budder Bait** (Puna Budder) · Top Shelf **Maui Wowie Wahoo** (Maui Wowie) · Straight Fire **Trade Wind Torch** (fictional)
 
@@ -415,7 +430,7 @@ Strains: Reggie **Hawaiian Snowcone Cast** (Hawaiian Snow) · Home Grown **Kona 
 | Rare | Largemouth Bass · Butterfly Peacock Bass |
 | Epic | Mountain Mullet (dajao) |
 | Legendary | Bigmouth Sleeper (guavina) |
-| Lost Legend | Abuelo Guavina — an ancient giant sleeper (folklore) |
+| Lost Legend | Abuelo Guavina — an ancient giant sleeper (game invention, owner 2026-11-16; bigmouth sleepers are real Puerto Rican fish) |
 
 Strains: Reggie **Purple Haze Hook** (Purple Haze) · Home Grown **Mango Kush Mullet** (Mango Kush) · Top Shelf **Guavina Guava** (Guava) · Straight Fire **Coquí Cloud** (fictional)
 
@@ -427,7 +442,7 @@ Strains: Reggie **Purple Haze Hook** (Purple Haze) · Home Grown **Mango Kush Mu
 | Rare | Common Snook (róbalo) · Mangrove Snapper |
 | Epic | Bonefish |
 | Legendary | Atlantic Tarpon (sábalo) |
-| Lost Legend | El Rey Sábalo — a 250-lb king tarpon, the last fish in the game (folklore) |
+| Lost Legend | El Rey Sábalo — the 200-lb-plus tarpon that San Juan's lagoon guides tell of, the one that always breaks the line; the last fish in the game (anchored in real guide reports, owner 2026-11-16) |
 
 Strains: Reggie **Banana Punch Bait** (Banana Punch) · Home Grown **Island Sweet Snook** (Island Sweet Skunk) · Top Shelf **Pa-PIE-ya Tarpon** (Papaya) · Straight Fire **El Fuego Final** (fictional)
 

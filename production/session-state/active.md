@@ -33,6 +33,38 @@ Task:
 <!-- /STATUS -->
 
 <!-- CHECKPOINT -->
+- Task: Foundation GDDs closed out + owner decisions, 2026-11-16 (branch setup/studio-template)
+- Status: Fish Database and Gear & Item Database both Approved (lean); post-approval edits below NOT re-reviewed
+- Fish DB edits: Formula 1 missing-rarity term (Chill also lifts rarities with unlogged entries; Top Shelf ~22 -> ~18 bites); Formula 5 + knob yak_legendary_share 0.5 (0.2-0.8); rule 11 reference check; one-off Lost Legends need no tag; AC-33 at 100k; AC-45..49; Pond 1 tags in content file
+- Owner decisions: tags = lure families (bass, panfish, catfish, pike, trout); perf 60 fps Steam Deck (project.yaml performance); meters 0-100 points; sweet_spot_bonus applies to the 3 s gap; Lost Legends: 3 verified, 3 replaced with real records, 2 resized, Abuelo Guavina stays invented
+- Registry: rarity_chance revised, +yak_legendary_share
+- Open: optional fresh re-review of both GDDs; Gear AC-1 needs item numbers; integration ACs wait on other docs; Fish log has no 4th-review entry
+- Next, in a FRESH session: /design-system Settings & Input (3rd in design order)
+- Gate: Concept -> Systems Design is CONCERNS; stage still Concept
+- Git: 839bc20 committed (not pushed); uncommitted: Fish GDD, Gear GDD, concept, content file, registry, project.yaml, systems index, this file
+<!-- /CHECKPOINT -->` is free-form narrative for humans
+       and for a returning agent that wants detail. No hook ever injects it, so
+       it may grow — but see Rotation below.
+
+  Why the split exists: one append-only file doing both jobs grows without
+  bound, and every consumer then reads a different slice of it: the top, the
+  bottom, or a block nothing writes. They disagree because there is no contract
+  to agree on. With the named regions, every consumer reads the same part.
+
+  ROTATION. When the narrative below grows past ~200 lines, move it to
+  `production/session-logs/` and start it fresh:
+      bash .claude/scripts/rotate-session-state.sh
+  Nothing is lost — and the commit history already records most of what the
+  narrative repeats.
+-->
+
+<!-- STATUS -->
+Epic:
+Feature:
+Task:
+<!-- /STATUS -->
+
+<!-- CHECKPOINT -->
 - Task: Foundation GDDs closed out, 2026-11-16 (branch setup/studio-template)
 - Status: Fish Database Approved (4th review, lean); Gear & Item Database Approved (3rd review, lean, same session as its revisions, so not independent)
 - Files: design/gdd/fish-database-spawn-tables.md, design/gdd/gear-item-database.md; both have all 8 sections
