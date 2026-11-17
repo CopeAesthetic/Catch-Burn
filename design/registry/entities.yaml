@@ -179,15 +179,16 @@ formulas:
     variables:
       - base
       - flat
+      - flat_max
       - percent
       - pct_floor
       - pct_cap
       - factor
     output_range: [0, 999]
-    expression: "max(0, base + sum(flat)) * clamp(1 + sum(percent), 1 + pct_floor, 1 + pct_cap) * product(factor)"
-    notes: "How gear changes any stat another system owns. Flats add, percents add (owner decision 2026-11-16), factors (smoking item, mask) multiply. Each gameplay system supplies its own base."
+    expression: "max(0, base + min(sum(flat), flat_max)) * clamp(1 + sum(percent), 1 + pct_floor, 1 + pct_cap) * product(factor)"
+    notes: "How gear changes any stat another system owns. Flats add up to a per-key flat_max (stackable flat keys only), percents add (owner decision 2026-11-16), factors (smoking item, mask) multiply. Mask factors apply only with a smoking item equipped. Only the best owned ladder step counts. Each gameplay system supplies its own base. Was: no flat_max (revised by the gear design review, 2026-11-16)."
     added: 2026-11-16
-    revised: ""
+    revised: 2026-11-16
 
 # Example:
 #

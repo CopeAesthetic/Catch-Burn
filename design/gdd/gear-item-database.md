@@ -1,12 +1,12 @@
 # Gear & Item Database
 
-> **Status**: Designed (pending review)
+> **Status**: Revised after design review 2026-11-16 (pending re-review)
 > **Author**: owner + design-system skill
 > **Last Updated**: 2026-11-16
 > **Last Verified**: 2026-11-16
 > **Implements Pillar**: Pillar 1 (The High Is the Progression); Pillar 2 (Chill First, Never Punishing); Pillar 4 (Budget Charm)
 > **Creative Director Review (CD-GDD-ALIGN)**: SKIPPED 2026-11-16 — lean mode
-> **Independent review**: not done. Run `/design-review design/gdd/gear-item-database.md` in a fresh session.
+> **Independent review**: 2026-11-16, lean, NEEDS REVISION (4 blocking, 7 recommended). Revised the same day; run `/design-review design/gdd/gear-item-database.md` again in a fresh session.
 
 ## Summary
 
@@ -72,15 +72,17 @@ The stat keys are this system's list, and a modifier naming any other key fails 
 | `chill_per_hit` | factor | Chill Meter & Smoking | Meter gained per hit of a strain |
 | `grams_per_hit` | factor | Chill Meter & Smoking | Weed used per hit |
 | `chill_drain` | percent | Chill Meter & Smoking | How fast the meter drains (negative lasts longer) |
-| `paddle_speed` | percent | Player Controller | Kayak speed |
-| `tip_resistance` | percent | Player Controller | How hard the kayak is to tip in co-op |
+| `paddle_speed` | flat | Player Controller | Kayak speed, added to the Controller's base (the Rental Kayak adds 0) |
+| `tip_resistance` | flat | Player Controller | How hard the kayak is to tip in co-op, added to the Controller's base (the Rental Kayak adds 0) |
 | `stash_slots` | flat | Inventory & Storage | Cooler capacity |
 | `stringer_slots` | flat | Inventory & Storage | Fish carried on the water |
 | `munchies` | flat | Hunger, Munchies & Drunk | Change to Munchies when eaten (negative lowers it) |
 | `hunger` | flat | Hunger, Munchies & Drunk | Change to Hunger when eaten |
 | `drunk` | flat | Hunger, Munchies & Drunk | Change to the Drunk meter (beer +10%) |
 
-No stat key reads or changes rarity odds, which entries are open, or anything in Fish Database Formula 1. Adding one is a Pillar 1 change for the owner, not a data edit.
+**Flat keys have a ceiling.** A flat key that several equipped items can stack (`hookset_window`, `line_forgiveness`) carries a `flat_max` in the data: the most its summed flats may add (Formula 1; owner decision 2026-11-16). The ladder keys are bounded by their top step. `munchies`, `hunger` and `drunk` are per-item amounts applied once when the item is eaten, never summed across items, so they carry none.
+
+No stat key reads or changes which rarities or entries are open, and none touches an input of Fish Database Formula 1 except through the Chill state. Smoking items set how fast the Chill meter fills and how long it lasts (`chill_per_hit`, `chill_drain`), and the Chill state is an input to that formula. So gear does shift odds inside rarities a strain has already opened, by way of the Chill state only (owner decision 2026-11-16: intended). At any given Chill state and strain tier gear changes nothing, which AC-23 and AC-26 test. Adding a stat key is a Pillar 1 change for the owner, not a data edit.
 
 **The lure's bias** is not a stat key. A lure carries one species tag from the Fish Database's tag list and a bias from 1 to `lure_bias_cap` (3, owned by the Fish Database). The Fish Database reads it when it picks an entry within an open rarity.
 
@@ -89,11 +91,13 @@ No stat key reads or changes rarity odds, which entries are open, or anything in
 1. Every id is unique.
 2. Every modifier uses a listed stat key and a kind that key allows.
 3. A factor is between 0.25 and 4.
-4. A lure's tag is on the Fish Database's tag list, and its bias is between 1 and `lure_bias_cap`.
+4. A lure's tag is on the Fish Database's tag list, and its bias is between 1 and `lure_bias_cap`. The Fish Database's doc gives tags only as examples today; it must define the list as closed before this rule can run (Open Questions 12).
 5. Each ladder has exactly one starter, and each step's ladder values are higher than the step below on every stat it changes (a ladder is strictly better step by step).
 6. Every starting-kit item exists and is the right kind.
 7. No item, modifier or amount is written in code.
-8. The stacking knobs are in range: `pct_floor` from −0.9 to 0, `pct_cap` from 0 to 3 (Formula 1).
+8. The stacking knobs are in range: `pct_floor` from −0.9 to 0, `pct_cap` from 0 to 3, and any per-key override pair of them in the same ranges (Formula 1).
+9. Every percent modifier is between −0.5 and +1.0.
+10. Each stackable flat key (`hookset_window`, `line_forgiveness`) has a `flat_max`, and no single item's flat on it is above that `flat_max`.
 
 **Equipping and owning (decided 2026-11-16)**
 
@@ -144,27 +148,30 @@ Starting values are proposals approved by the owner on 2026-11-16 as a place to 
 
 The stat_value formula is defined as:
 
-`stat_value = max(0, base + Σflat) × clamp(1 + Σpercent, 1 + pct_floor, 1 + pct_cap) × Πfactor`
+`stat_value = max(0, base + min(Σflat, flat_max)) × clamp(1 + Σpercent, 1 + pct_floor, 1 + pct_cap) × Πfactor`
 
-The sums and the product run over every modifier on that stat key in the player's loadout: the equipped Tackle Box items and the best owned step of each ladder. With no modifiers, the sums are 0 and the product is 1, so the value is the base.
+The sums and the product run over every modifier on that stat key in the player's loadout: the equipped Tackle Box items and the best owned step of each ladder. Only the best owned step of a ladder counts; steps are never summed. The Gas Mask's factors count only while a smoking item is equipped. Food and beer are not part of the loadout: each is applied once, when eaten. `flat_max` applies only to the stackable flat keys (`hookset_window`, `line_forgiveness`); elsewhere it is unlimited. With no modifiers, the sums are 0 and the product is 1, so the value is the base.
 
 **Variables:**
 | Variable | Type | Range | Source | Description |
 |----------|------|-------|--------|-------------|
 | `base` | float | ≥ 0 | data file of the owning system | The value with no gear, owned by the system that asks (for example Bite Timing's 5 s wait). |
 | `flat` | float | any; each item's amount | data file | Flat modifiers, added to the base (a rod's hook-set +0.2 s). |
-| `percent` | float | −0.5 to +1.0 per modifier | data file | Percent modifiers as fractions (−0.15 is −15%). Summed, not multiplied (owner decision 2026-11-16). |
+| `flat_max` | float | > 0, per stackable flat key (start `hookset_window` +0.5 s, `line_forgiveness` +2; proposals, untuned, not yet owner-approved) | data file | The most the summed flats on that key may add. Stops flats from erasing the hook-set test or the needle's miss penalty. |
+| `percent` | float | −0.5 to +1.0 per modifier (data rule 9) | data file | Percent modifiers as fractions (−0.15 is −15%). Summed, not multiplied (owner decision 2026-11-16). |
 | `pct_floor` | float | −0.9 to 0 (start −0.5) | data file | The lowest the summed percent may reach. |
 | `pct_cap` | float | 0 to 3 (start +1.0) | data file | The highest the summed percent may reach. |
 | `factor` | float | 0.25 to 4 | data file | Multipliers, from the smoking item and the mask only. |
 
 `pct_floor` and `pct_cap` are global, and a stat key may carry its own pair in the data to override them.
 
-**Output Range:** from half the base to twice the base before factors, at the starting floor and cap (owner decision 2026-11-16: no gear combination more than halves or doubles a stat). Never below 0. With the shipped smoking data, factors reach at most ×6 (Dab Rig 3.0 × Gas Mask 2).
+**Output Range:** for percent-stacked stats, from half the base to twice the base before factors, at the starting floor and cap (owner decision 2026-11-16: no gear combination more than halves or doubles a stat). For the stackable flat stats, from the base up to the base plus `flat_max`. Never below 0. With the shipped smoking data, factors reach at most ×6 (Dab Rig 3.0 × Gas Mask 2).
 
 **Examples:**
 - Bite wait, open water, Spincast Combo (no `bite_wait` modifier) and a lure at −15%: 5 × (1 − 0.15) = 4.25 s.
 - Hook-set window with the Ultralight Spinner (+0.2 s flat): (1.5 + 0.2) × 1 = 1.7 s.
+- Hook-set window with three +0.2 s items and `flat_max` +0.5: 1.5 + min(0.6, 0.5) = 2.0 s.
+- Chill per hit, Gas Mask equipped and the smoking slot empty: no smoking item, so the mask's factor is not applied and the value is the base.
 - Needle speed with three items at −30%, −25% and −20% (sum −75%): clamped to −50%, so the needle runs at half its base speed.
 - Chill per hit, Dab Rig and Gas Mask: strain base × 3.0 × 2 = 6 times the strain's base, against the One Hitter's 1.0.
 
@@ -172,7 +179,8 @@ The sums and the product run over every modifier on that stat key in the player'
 - A summed percent of −100% or less would make a stat 0 or negative (an instant bite, a frozen needle). The floor of −50% prevents it, and `pct_floor` cannot be set below −0.9.
 - A negative flat larger than the base would go below 0. The `max(0, …)` holds it at 0.
 - A factor of 0 would turn smoking off without saying so. Factors are at least 0.25.
-- `base` at 0 stays 0 under any percent or factor. A system that wants gear to matter must not use a base of 0.
+- Flats stacking without limit: enough `line_forgiveness` removes the needle's −1 on a miss, and enough `hookset_window` removes the reaction test. `flat_max` holds each.
+- `base` at 0 stays 0 under any percent or factor, though flats still add (the ladder keys rely on this). A system that wants percent gear to matter must not use a base of 0.
 
 **Loop check:** a stronger smoking item fills the meter faster, which reaches better rarity odds sooner (Fish Database Formula 1), which earns more money for better smoking items. That is the intended loop (Pillar 1). It is damped by grams per hit (more weed bought), by smoking draining Hunger faster, and by YAK LOCKED making fishing harder. Gear cannot open a rarity, so the loop speeds progress up but cannot skip it.
 
@@ -211,13 +219,13 @@ Not a new formula: the `chill_per_hit` and `grams_per_hit` factors that Formula 
 
 ### 3. Ladder values
 
-Not a formula: each ladder step sets one flat value outright, and the best owned step is the one used.
+Not a new formula: each ladder step carries one flat modifier, and only the best owned step contributes (steps are never summed; owner decision 2026-11-16). `stash_slots` and `stringer_slots` have a base of 0 in Formula 1, so the step's amount is the total. A kayak step adds to the Player Controller's base; the Rental Kayak adds 0, so the Controller's base is how the Rental performs.
 
 | Ladder | Steps and values | State |
 |---|---|---|
 | Cooler `stash_slots` | Lunchbox 4 → Hard-Side 6 → Marine 9 → "Big Chill" 12 | Content file |
 | Stringer `stringer_slots` | Rope 5 → Chain 8 → Wire Fish Basket 12 → Floating Livewell 18 | **Proposed in the content file, not confirmed by the owner** |
-| Kayak `paddle_speed`, `tip_resistance` | Rental → Sit-on-Top → Pedal | No numbers yet |
+| Kayak `paddle_speed`, `tip_resistance` (flat, units set by the Player Controller doc) | Rental (adds 0) → Sit-on-Top → Pedal | No numbers yet |
 
 ## Edge Cases
 
@@ -225,9 +233,10 @@ Not a formula: each ladder step sets one flat value outright, and the best owned
 
 - **If the player tries to empty the rod slot**: it cannot be emptied, only swapped for another owned rod. Casting always has a rod.
 - **If the smoking slot is empty**: the player cannot smoke (brief: smoking needs a smoking item equipped). The mask, if equipped, does nothing.
-- **If a mask is equipped with no smoking item**: no effect, and nothing is used up.
+- **If a mask is equipped with no smoking item**: no effect, nothing is used up, and the mask's factors are not applied when a stat is resolved (Formula 1).
 - **If two or more items change the same stat**: their modifiers combine by Formula 1: flats add, percents add, factors multiply.
 - **If the summed percent passes the floor or the cap**: it is held at the limit. This is a clamp at run time, not a data error, because each item on its own is legal.
+- **If summed flats on a stackable flat key pass `flat_max`**: they are held at `flat_max`, the same kind of run-time clamp. A single item whose flat is already above `flat_max` is a data error (rule 10).
 - **If a stat is asked for with no modifiers in the loadout**: the base is returned unchanged.
 - **If the data names an unknown stat key, a kind the key does not allow, a factor outside 0.25–4, or a lure tag the Fish Database does not list**: the data check fails at load and names the item.
 - **If a lure's bias is above `lure_bias_cap`**: the data check fails at load. (The Fish Database also clamps at run time, so a bad value never reaches a roll.)
@@ -273,7 +282,7 @@ Not a formula: each ladder step sets one flat value outright, and the best owned
 
 **One-directional for now.** Apart from the Fish Database, none of these has a design doc. Each must list this system among its dependencies when it is written and confirm the stat keys it owns.
 
-**Change to the systems index needed:** the index shows this system depending on nothing, and lists only Casting, Needle, Chill Meter, Inventory, Economy and Shop as dependents. This doc adds the Fish Database as a soft dependency, and Bite Timing, Hunger, Player Controller, Cosmetics, Save/Load and Multiplayer as dependents.
+**Change to the systems index needed:** row 18 already lists the Fish Database as a soft dependency, and Casting, Needle, Chill Meter, Inventory, Economy and Shop already list this system. The rows for Player Controller (1), Bite Timing (9), Hunger, Munchies & Drunk (12), Cosmetics (23), Save/Load and Multiplayer do not, and this doc names all of them as dependents.
 
 ## Visual/Audio Requirements
 
@@ -354,9 +363,19 @@ Checked against the QA lens: every core rule and formula has a criterion, each T
 
 **Across systems**
 
-- **AC-23** — automated, integration with the Fish Database, seeded — **GIVEN** tier 3 and Chill state 1 at Lil' Puffin' Pond, **WHEN** 100,000 catches are requested once with no gear and once with each rod and each lure in the data in turn, **THEN** Legendary stays between 9.5% and 10.5% and Epic between 15.4% and 16.6% every time. (Pillar 1: gear never changes rarity odds.)
+- **AC-23** — automated, integration with the Fish Database, seeded — **GIVEN** tier 3 at Lil' Puffin' Pond, **WHEN** 100,000 catches are requested once with no gear and once with each rod, each lure, each smoking item and the Gas Mask in turn, at Chill state 1 and again at Chill state 4, **THEN** Legendary and Epic stay inside the Fish Database's bands for that state every time (state 1: 9.5–10.5% and 15.4–16.6%; state 4: 14.9–15.9% and 24.0–25.2%). (Pillar 1: at a given Chill state, gear never changes rarity odds; smoking items change them only by changing the state.)
 - **AC-24** — automated — **GIVEN** a `trout` lure with bias 3 equipped, **WHEN** the Fish Database asks for the lure bias, **THEN** it receives tag `trout` and bias 3.
 - **AC-25** — UI, retained screenshot, needs the Smoke & Tackle menu — **GIVEN** the Spincast Combo, **WHEN** its card is shown, **THEN** it reads "+10% cast distance", generated from the data.
+- **AC-26** — automated, integration with the Fish Database, seeded — **GIVEN** tier 1, **WHEN** 10,000 catches are requested once with each lure and each smoking item equipped in turn, **THEN** every catch is Common or Uncommon. (Pillar 1: no item opens a rarity.)
+
+**Flat ceiling, percent range, mask and flags** (added after the 2026-11-16 design review)
+
+- **AC-27** — automated — **GIVEN** `hookset_window` base 1.5, three +0.2 flat modifiers and `flat_max` 0.5, **WHEN** resolved, **THEN** the value is 2.0; and **GIVEN** test data with one item at +0.6 on `hookset_window` (above `flat_max`), or a stackable flat key with no `flat_max`, **WHEN** it loads, **THEN** the state is Failed and the report names the item or key.
+- **AC-28** — automated — **GIVEN** test data with a percent modifier of −0.6 or +1.1, or a per-key `pct_floor` of −1.0, **WHEN** it loads, **THEN** the state is Failed and the report names the item or key.
+- **AC-29** — automated — **GIVEN** the Gas Mask equipped and the smoking slot empty, **WHEN** `chill_per_hit` is resolved with base 1, **THEN** the value is 1.0; and with the One Hitter also equipped, 2.0.
+- **AC-30** — integration, needs Chill Meter & Smoking and Strains — **GIVEN** the Dab Rig equipped and no concentrate in the Cooler, **WHEN** the player presses F on the water, **THEN** no hit happens and nothing is used up.
+- **AC-31** — integration, needs Chill Meter & Smoking and Player Controller — **GIVEN** the player is paddling, **WHEN** they press F with the Puff-Go equipped, **THEN** a hit happens; and **WHEN** they press F with any other smoking item, **THEN** none does.
+- **AC-32** — automated — **GIVEN** a save holding an item id the data has marked retired, **WHEN** the save loads, **THEN** the game starts, the item is held as an inert item, and no stat changes.
 
 **Not acceptance criteria: playtest questions**
 
@@ -366,7 +385,7 @@ Is a +10% step noticeable within a few catches; does the Dab Rig with the Gas Ma
 
 - **No performance criterion**: the project has no budget set. A stat resolve is a few additions, but there is nothing to test it against.
 - **AC-1 cannot pass yet**: lines, most lures, The Unc Stick, kayaks and foods have words, not numbers (Open Questions 2–4 and 6).
-- **AC-18 to AC-20 and AC-25 wait on other systems.**
+- **AC-18 to AC-20, AC-25, AC-30 and AC-31 wait on other systems.**
 
 ## Open Questions
 
@@ -383,3 +402,6 @@ Is a +10% step noticeable within a few catches; does the Dab Rig with the Gas Ma
 | 9 | **Feasibility is unchecked**: `docs/engine-reference/godot/modules/` has no scripting reference. | Technical director | Technical Setup |
 | 10 | **No performance budget.** | Owner, via `/project-settings` | Before the first build |
 | 11 | **Item prices**, including The Unc Stick's late-game price. | Economy doc | When that doc is written (20th) |
+| 12 | **A closed species-tag list.** Data rule 4 and AC-5 check lure tags against it; the Fish Database doc gives tags only as examples. | Fish Database & Spawn Tables doc (revision) | Before the data check is built |
+| 13 | **`flat_max` values** for `hookset_window` and `line_forgiveness`. The owner chose a per-key ceiling; +0.5 s and +2 are proposals. | Owner, with the Bite Timing and Reel-in Needle docs | When those docs are written |
+| 14 | **Units of the meter keys** (`munchies`, `hunger`, `drunk`) and the base behind `sweet_spot_bonus` (the 3 s gap, or a share). | Hunger doc; Bite Timing doc | When those docs are written |
