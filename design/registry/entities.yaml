@@ -446,7 +446,7 @@ constants:
       - design/gdd/retro-rendering.md
     value: 3.0
     unit: contrast ratio
-    notes: "Art bible Vibrance rule 3 (about 3:1), measured with the shade_gap formula; the minimum the screen must show. The load check asks for 3.03 (plus quant_margin 0.03 for the 5-bit dither), which forces fog to start past the longest cast and water light at Sunrise and Sunset to stay >= 0.92 of noon (Retro Rendering Formula 5, second design review 2026-11-17)."
+    notes: "Called gap_min in Retro Rendering Formula 5 (its load check uses gap_check = gap_min + quant_margin). Art bible Vibrance rule 3 (about 3:1), measured with the shade_gap formula; the minimum the screen must show. The load check asks for 3.03 (plus quant_margin 0.03 for the 5-bit dither), which forces fog to start past the longest cast and water light at Sunrise and Sunset to stay >= 0.92 of noon (Retro Rendering Formula 5, second design review 2026-11-17)."
     added: 2026-11-17
     revised: 2026-11-17
 
@@ -504,6 +504,74 @@ constants:
     value: 6.0
     unit: in-game hour
     notes: "The hour every day starts (Day, Night & Sleep Formula 1, constant: the art bible's sunrise and the brief's sunrise to midnight). Retro Rendering's sun path and Sunrise light key start here; Save/Load's wake-up save holds time_of_day 6.0. Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
+    revised: ""
+
+  - name: dawn_end_hour
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+      - design/gdd/retro-rendering.md
+    value: 8.0
+    unit: in-game hour
+    notes: "The hour Dawn ends and Day begins (Day, Night & Sleep Formula 2, data file, range 7.0-10.0). Retro Rendering's Day light key starts here (its Formula 3, h1). The load check refuses dawn_end_hour < dusk_start_hour < night_start_hour being out of order. Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
+    revised: ""
+
+  - name: dusk_start_hour
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+      - design/gdd/retro-rendering.md
+    value: 19.0
+    unit: in-game hour
+    notes: "The hour Day ends and Dusk begins (Day, Night & Sleep Formula 2, data file, range 17.0-20.0). Retro Rendering's Day key ends here (its Formula 3, h2). Must be below night_start_hour, so some day_length_s and warn1_lead_s pairs are refused (Day, Night & Sleep Formula 2). Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
+    revised: ""
+
+  - name: day_length_s
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+    value: 1080
+    unit: real seconds of running time, sunrise to midnight
+    notes: "Starting value, to tune in the first Godot playtest (Day, Night & Sleep Open Question 6). Data range 720-1440; the load check refuses a value outside it. 1080 is 18 minutes, inside the brief's 15-20, and one real second is one in-game minute. clock_rate = (24 - sunrise_hour) / day_length_s. Economy, Hunger and Chill tune their per-day cadence against it and must re-check when it moves. Registered by /consistency-check 2026-11-17 (Day, Night & Sleep review item 5)."
+    added: 2026-11-17
+    revised: ""
+
+  - name: warn1_lead_s
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+    value: 180
+    unit: real seconds before midnight
+    notes: "'Getting late' fires this long before midnight, and Night begins at the same moment, so night_start_hour = 24 - warn1_lead_s * clock_rate (21.0 at the defaults). Data range 120-300; must exceed warn2_lead_s. Should cover the worst-case return trip to The Drop Box (Day, Night & Sleep review item 2, not yet an Open Question). Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
+    revised: ""
+
+  - name: warn2_lead_s
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+    value: 60
+    unit: real seconds before midnight
+    notes: "'Last call' fires this long before midnight (23.0 at the defaults). Data range 30-120; must be less than warn1_lead_s (the load check refuses otherwise). Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
+    revised: ""
+
+  - name: midnight_grace_s
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+    value: 20
+    unit: game-time seconds
+    notes: "The longest the midnight drift-off waits for a catch in progress to finish (Day, Night & Sleep rule 6, Formula 3). Data range 5-45. Counted in game time, so it stops while game_time_paused is true. A catch still going at the cap is cut off like any held action. Registered by /consistency-check 2026-11-17."
     added: 2026-11-17
     revised: ""
 

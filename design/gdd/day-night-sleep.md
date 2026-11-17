@@ -1,6 +1,6 @@
 # Day, Night & Sleep
 
-> **Status**: Designed; `/design-review` 2026-11-17 NEEDS REVISION, 4 blockers revised, re-review pending
+> **Status**: Approved (second `/design-review` 2026-11-17, lean, 0 blockers; 11 recommended items open, see `design/gdd/reviews/day-night-sleep-review-log.md`)
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
 > **Author**: owner + Claude (design-system, lean review)
 > **Last Updated**: 2026-11-17
@@ -40,6 +40,7 @@ Day, Night & Sleep is the game's clock and its bed. It runs one in-game day from
    2. **Payout.** Every fish in The Drop Box is sold to Jimmy, and the cash is placed in the box (Economy sets the value, Deliveries & Drop Box moves the cash).
    3. **Deliveries.** Every order now due arrives in the box (The Guy's and Jane's). The first strain arrives after the first sleep.
    4. **New day.** `day_number` goes up by 1, the clock returns to sunrise, and `day_started` is emitted. Hunger, Chill and any other system with a daily reset decides its own reset.
+   After step 4 and before step 5, **Save/Load's wake-up save** is written (Save/Load rule 5). It is not a numbered step: it changes no game state, and step 5 waits for it. If a quit request is waiting, the game exits after the save without waking the player (Save/Load rule 6).
    5. **Wake.** The player is placed in the shack bed (rule 9) and the screen fades up into Gameplay.
 
 9. **Wake in bed** is one routine: fade, place the player in the bed of the current area's shack (the kayak returns to its dock), restore Gameplay input. The overnight uses it, and so does the 10-beer blackout. The blackout does not run the handover and does not change the clock; Hunger, Munchies & Drunk owns it and calls this routine (provisional, Open Question 2).
@@ -91,7 +92,7 @@ The clock reads 06:00 to 24:00 only. There is no 00:00 to 06:00 state, because t
 | Audio | — | `phase_changed`, the two warnings, sleep and wake cues | Audio owns the mix |
 | HUD & Catch Banner; Flip Phone & FishMail | — | The warnings, `seconds_to_midnight`, who is still up in co-op; the phone LCD shows the time and day number (provisional) | The HUD and the phone draw them |
 | Multiplayer (Alpha) | Players connected, who is in bed | The host-authoritative clock; the overnight start | Multiplayer carries the sync |
-| Save/Load (Repack) | — | `day_number`, `time_of_day` | Save/Load owns the file |
+| Save/Load (Repack) | — | `day_number`, `time_of_day`; the wake-up save as the handover's last act, between steps 4 and 5 (Save/Load rule 5) | Save/Load owns the file |
 | Main Menu & Intro | New Sesh | Starts day 1 at sunrise | Main Menu |
 
 ## Formulas
@@ -211,7 +212,7 @@ The overnight_start rule is defined as:
 - **If a fish is in the Cooler, on the stringer or carried when the overnight starts**: it spoils. Only The Drop Box protects a fish (brief). Whether a better Cooler could keep fish fresh is Open Question 4.
 - **If the player sleeps with nothing to sell and no orders due**: the overnight still runs, and the day number still goes up. Nothing else changes.
 - **If the player sleeps at 06:00, again and again**: each sleep is a full day. No limit applies (Pillar 2). Any daily reset in Hunger or Chill would be available on demand, so those systems must not make sleep a free refill (Open Question 3).
-- **If the game is closed during the overnight**: the quit finishes without a save, and the next load is the last save, from before the sleep. The handover is never half-applied.
+- **If the game is closed during the overnight**: the quit is queued (Save/Load rule 6). The handover finishes, the wake-up save is written, and the game exits without fading up. The next load is the new morning, with every step applied. The handover is never half-applied.
 
 **Co-op**
 
@@ -241,7 +242,7 @@ The overnight_start rule is defined as:
 | Economy (Jimmy) | Hard | Rule 8 step 2: the payout runs inside the handover |
 | Inventory & Storage | Hard | Rule 8 step 1: the spoiled flag on every fish outside the box |
 | Interaction (E) | Hard | The bed as an `interact` object, and getting up |
-| Save/Load (Repack) | Hard | `day_number` and `time_of_day` are saved (rule 10) |
+| Save/Load (Repack) | Hard | `day_number` and `time_of_day` are saved (rule 10); the wake-up save runs inside the handover after step 4 (rule 8) |
 | Main Menu & Intro | Hard | New Sesh starts day 1 at sunrise |
 | Bite Timing | Soft | `is_night` (longer waits) |
 | Retro Rendering | Soft | `time_of_day`, `phase` and the three phase-boundary hours, for light direction, tint and fog colour |
@@ -272,7 +273,7 @@ Optional for a Core system. The day's pace and the overnight's brevity are what 
 
 - **Pace:** one real minute is one in-game hour at the default, so the three real minutes of Night are felt as a short, quiet last stretch. The day length is judged in the first Godot playtest (Open Question 6).
 - **Warnings never startle:** no sound above the ambience's own level, no screen shake, no input taken.
-- **The overnight is short.** At the defaults the overnight takes at most 3.25 s from the start of the fade out to the end of the fade up: a 0.75 s fade out, a black hold of 1.5 s or less while steps 1 to 4 of rule 8 run, and a 1.0 s fade up during which step 5 (the wake) places the player (AC-22). The three systems whose steps take time (Inventory & Storage, Economy, Deliveries & Drop Box) share a combined budget of 1.5 s for them, so waiting overnight never feels like a loading screen.
+- **The overnight is short.** At the defaults the overnight takes at most 4.25 s from the start of the fade out to the end of the fade up: a 0.75 s fade out, a black hold of 1.5 s or less while steps 1 to 4 of rule 8 run plus up to 1.0 s for Save/Load's wake-up save (its write budget, Save/Load rule 10), and a 1.0 s fade up during which step 5 (the wake) places the player (AC-22). The three systems whose steps take time (Inventory & Storage, Economy, Deliveries & Drop Box) share a combined budget of 1.5 s for them, so waiting overnight never feels like a loading screen.
 - **Waking gives control back at once:** the player can move as soon as the fade up ends.
 
 ## UI Requirements
@@ -329,7 +330,7 @@ Test types: **Logic** = automated unit test in `tests/unit/day_night_sleep/`. **
 **Saving and edge cases**
 
 - **AC-16** (Logic, rule 10, edge cases) — **GIVEN** a save at day 3, 15.5, **WHEN** it loads, **THEN** `day_number` is 3 and `time_of_day` is 15.5. **GIVEN** a save with `time_of_day` 30.0, **THEN** it loads as 24.0 and the overnight starts. **GIVEN** 2.0, **THEN** it loads as 6.0. **GIVEN** `day_length_s` changed between save and load, **THEN** `time_of_day` is unchanged.
-- **AC-17** (Integration, edge case) — **GIVEN** a quit request during the overnight, **WHEN** the game restarts and the last save is loaded, **THEN** the box contents, fish flags and `day_number` equal their values from before the sleep, with no step half-applied.
+- **AC-17** (Integration, edge case) — **GIVEN** a quit request during the overnight, **WHEN** the game restarts and the last save is loaded, **THEN** it is the wake-up save of that overnight: `day_number` is one higher, `time_of_day` is `sunrise_hour`, and steps 1 to 4 are all applied (fish spoiled, payout in the box, orders arrived), with no step half-applied. **GIVEN** the request arrives before step 1 has started, **THEN** the same.
 - **AC-18** (Logic, edge case) — **GIVEN** a co-op client whose clock is ahead of the host's by 0.5 s, **WHEN** it receives the host's time over 1000 frames of simulated jitter, **THEN** its `time_of_day` never decreases between frames. *Waits on Multiplayer.*
 - **AC-19** (Integration, edge case) — **GIVEN** the phone open and `fish` held at midnight, **WHEN** the clock reaches 24.0, **THEN** the phone closes and `fish` sends *cancelled* (Settings & Input rule 7). **GIVEN** Settings open in co-op at midnight, **THEN** it closes and the settings file is written.
 
@@ -337,7 +338,7 @@ Test types: **Logic** = automated unit test in `tests/unit/day_night_sleep/`. **
 
 - **AC-20** (Check, performance) — **GIVEN** a day running at 60 fps on a Steam Deck, **WHEN** profiled for 60 s, **THEN** this system's own processing averages ≤ 0.05 ms per frame.
 - **AC-21** (UI, rule 3) — **GIVEN** a day on the home pond, **WHEN** `time_of_day` is 6.0, 12.0, 19.5, 21.0 and 23.9, **THEN** the sky, light direction and tint differ at each, and fog density is identical at all five (screenshots retained). *Waits on Retro Rendering.*
-- **AC-22** (Check, Game Feel) — **GIVEN** the defaults and fakes that each take 0.5 s, **WHEN** the overnight runs, **THEN** the time from the start of the fade out to the end of the fade up is no more than 3.25 s (0.75 + 1.5 + 1.0), and the player can move on the frame the fade up ends. *The fakes stand in for Inventory & Storage, Economy and Deliveries & Drop Box until they exist.*
+- **AC-22** (Check, Game Feel) — **GIVEN** the defaults and fakes that each take 0.5 s, **WHEN** the overnight runs, **THEN** the time from the start of the fade out to the end of the fade up is no more than 4.25 s (0.75 + 1.5 + 1.0 for the save + 1.0), and the player can move on the frame the fade up ends. The fakes also include a wake-up save that takes 1.0 s. *The fakes stand in for Inventory & Storage, Economy and Deliveries & Drop Box until they exist.*
 
 ## Open Questions
 

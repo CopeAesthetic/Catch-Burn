@@ -30,3 +30,25 @@ Reviewed-Content-Hash: design/gdd/settings-input.md e2352e4194de39a95a89f34e36e7
 Reviewed-Content-Hash: design/gdd/fish-database-spawn-tables.md 3cf03b69015cd1a77a878f22618d49d29c5fd4c7
 Reviewed-Content-Hash: design/gdd/game-concept.md 9575fa3b8e721823c815dd1750d82b8b10b89eaf
 Reviewed-Content-Hash: design/game-brief.md 50dc6ce5ae4283ef7b7c16414c96c2d32d2db647
+
+## Review — 2026-11-17 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode)
+Blocking items: 0 | Recommended: 4
+Summary: Third review, covering the second review's APPROVED verdict (0 blockers, 8 recommended; its log entry was never written) and the 8 revisions applied afterwards. All 8 are verified applied and consistent with Day, Night & Sleep, whose rule 8, overnight edge case, AC-17 and 4.25 s budget were edited to match. Queue-then-save closes the lost-day windows in a quit during the overnight or a scene load. The one design gap left is the line between a quit with nothing to save and a queued quit.
+Prior verdict resolved: Yes (all 3 first-review blockers and all 8 second-review recommended items)
+Findings:
+- [RECOMMENDED] Rules 5/6: "a slot still Loading" exits at once but "a scene load" queues; Repack's area load and the post-Turn & Burn main-menu load are not placed, so a queued quit could re-save an unchanged game and demote the good backup
+- [RECOMMENDED] Tuning Knobs / rule 6: the quit_wait_cap_s clock should stop while a Try again / Quit without saving notice is up
+- [RECOMMENDED] Acceptance Criteria: AC-26 does not name the buttoned notice; no AC for a queued quit with a failed wake-up save, or a buttonless wake-up failure then a later quit
+- [RECOMMENDED] Registry: the 20 KB player record budget (and possibly quit_wait_cap_s) is a cross-GDD constraint and is not registered
+Reviewed-Content-Hash: design/gdd/save-load.md 69740d28765b12de6b2671c221f8344e552cfe2b
+Reviewed-Content-Hash: design/registry/entities.yaml 28ef26aa2f19078a4399bb4a163acd36408b2862
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/day-night-sleep.md 1bdb7072f604ee558c7dea53e7f79f2abbed2f1e
+Reviewed-Content-Hash: design/gdd/gear-item-database.md 6a79e0d13d6c0c35587ef5e32c5b7617bb807428
+Reviewed-Content-Hash: design/gdd/settings-input.md f73341f3c98b31abfbabfca698b7a12ec80c9b6f
+Reviewed-Content-Hash: design/gdd/fish-database-spawn-tables.md 3cf03b69015cd1a77a878f22618d49d29c5fd4c7
+Reviewed-Content-Hash: design/gdd/game-concept.md 9575fa3b8e721823c815dd1750d82b8b10b89eaf
+Reviewed-Content-Hash: design/game-brief.md 50dc6ce5ae4283ef7b7c16414c96c2d32d2db647

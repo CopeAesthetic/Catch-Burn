@@ -33,3 +33,36 @@ Reviewed-Content-Hash: design/gdd/fish-database-spawn-tables.md 3cf03b69015cd1a7
 Reviewed-Content-Hash: design/gdd/gear-item-database.md 6a79e0d13d6c0c35587ef5e32c5b7617bb807428
 Reviewed-Content-Hash: design/art/art-bible.md 4acf62dd6dd561cdd0470a8d195238df1c7f39e3
 Reviewed-Content-Hash: design/gdd/systems-index.md 80ee3f1b4f4879e9c77fcb4ab33636caae806bb6
+
+## Review — 2026-11-17 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean mode)
+Blocking items: 0 | Recommended: 11
+Summary: Second review, in a fresh session. All four first-review blockers verified resolved (Formula 2 and AC-4/AC-5 numbers recomputed at 720, 1080 and 1440; the pushed `catch_in_progress` flag; the Midnight Grace ↔ Paused rows; the 4.25 s overnight cap). Every worked number reproduces except one carried-over example. None of the first review's ten recommended items was applied, so most carry forward; the closest to a defect is the rule 2 vs rule 7 co-op clock contradiction, which lives in the Alpha-tier path.
+Prior verdict resolved: Yes
+Findings:
+- [RECOMMENDED] Rule 2 / rule 7: the clock stops in Cutscene / Loading, but "in co-op nothing here ever pauses"; whose context counts, and what "unless Scene Flow says otherwise" means, are unstated (carried).
+- [RECOMMENDED] Rule 4 / Open Questions: `warn1_lead_s` is not tied to the worst-case return trip to the shack's Drop Box; no Open Question or tuning constraint (carried).
+- [RECOMMENDED] Rule 3 / rule 8: whether `phase_changed` fires at the new-day step (Night to Dawn) and on load is unspecified; AC-4 covers only in-day boundaries; a mid-day load shares the shack placement with the wake (Save/Load rule 7) (carried, widened).
+- [RECOMMENDED] Rule 4 / co-op: a player in bed gets neither warning and can get up in Night having seen none; show the latest missed warning once (carried).
+- [RECOMMENDED] Registry and index: register `day_length_s`, `warn1_lead_s`, `warn2_lead_s`, `midnight_grace_s`, `dawn_end_hour`, `dusk_start_hour`; index estimate is S against L; row 3 omits the catch systems the Quick reference lists; Chill, HUD, Flip Phone and Player Controller do not list this system (carried).
+- [RECOMMENDED] Formula 1 example: at `day_length_s` 1440 an in-game hour is 80 s, not 75 s (carried).
+- [RECOMMENDED] Rule 6 / Formula 3 / Visual-Audio / Game Feel: Midnight Grace has no player-facing cue before a needle fight is cut; rule 6 ("at that moment") and Formula 3 (every frame) disagree on a catch that starts after 24:00 (new).
+- [RECOMMENDED] Settings & Input rule 17 and its dependency row still list spoilage as running on game time; the brief and concept do not record night-without-shade, slower night bites or bed-at-any-hour (carried).
+- [RECOMMENDED] Visual/Audio: the "two in-game hours" Dawn and Dusk blend holds only at the defaults; define by fraction of the phase or defer to Retro Rendering Formula 3 (carried).
+- [RECOMMENDED] Tuning Knobs and Player Fantasy absent (advisory at `standard`); Tuning Knobs is the place for the interplay constraints (carried).
+- [RECOMMENDED] Acceptance criteria: AC-9's "waits for the catch like any other" has no number; AC-7 "longer" and AC-21 "differ" need thresholds; AC-12's log omits the wake-up save (partly carried).
+- [NICE] Save/Load row "Flows in" omits the loaded values; solo-to-co-op join while Settings is open; bed use with `catch_in_progress`; AC-4 exact float hits; Bite Timing night-multiplier cap.
+Reviewed-Content-Hash: design/gdd/day-night-sleep.md d1cb6f473bab9174ff38dd428610c191aaefd203
+Reviewed-Content-Hash: design/registry/entities.yaml 28ef26aa2f19078a4399bb4a163acd36408b2862
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 9575fa3b8e721823c815dd1750d82b8b10b89eaf
+Reviewed-Content-Hash: design/game-brief.md 50dc6ce5ae4283ef7b7c16414c96c2d32d2db647
+Reviewed-Content-Hash: design/gdd/settings-input.md f73341f3c98b31abfbabfca698b7a12ec80c9b6f
+Reviewed-Content-Hash: design/gdd/fish-database-spawn-tables.md 3cf03b69015cd1a77a878f22618d49d29c5fd4c7
+Reviewed-Content-Hash: design/gdd/gear-item-database.md 6a79e0d13d6c0c35587ef5e32c5b7617bb807428
+Reviewed-Content-Hash: design/gdd/retro-rendering.md 91ce9287f88819f9b250c291b60247006fdec0de
+Reviewed-Content-Hash: design/gdd/save-load.md 69740d28765b12de6b2671c221f8344e552cfe2b
+Reviewed-Content-Hash: design/art/art-bible.md c672bb8db5ffd7853f2ae61cd9ea87fccffe2492
+Reviewed-Content-Hash: design/gdd/systems-index.md 112363cee2fe0fa8ab311b58570f75c27eec338d
