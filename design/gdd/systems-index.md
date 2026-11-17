@@ -2,7 +2,7 @@
 
 > **Status**: Draft
 > **Created**: 2026-11-16
-> **Last Updated**: 2026-11-16 (Gear & Item Database designed)
+> **Last Updated**: 2026-11-17 (Day, Night & Sleep dependency rows added; Retro Rendering designed)
 > **Source Concept**: design/gdd/game-concept.md (written from design/game-brief.md, which remains the detailed record)
 
 Review gates: TD-SYSTEM-BOUNDARY, PR-SCOPE and CD-SYSTEMS were skipped (lean review mode). They are not approvals.
@@ -20,9 +20,9 @@ This index was written before the game's five pillars were defined (they are now
 - **Player Controller.** Walking in the shack and on the dock, paddling the kayak, and first-person look. Everything the player does starts here, so it is designed early even though it is simple.
 - **Interaction (E).** Prompts and "use" for every interactable: bed, fridge, dresser, computer, Drop Box, Map, Tackle Box, Cooler, kayak.
 - **Day, Night & Sleep.** The clock from sunrise to midnight, the midnight drift-off, the bed, and what happens overnight: Jimmy's payout, deliveries, and fish spoiling. It was split from shade because these rules grew.
-- **Settings & Input** *(inferred)*. Named input actions for keys, mouse and gamepad, plus the Audio, Graphics and Controls menus. The brief's menus name them and the Steam Deck stretch goal needs gamepad; accessibility options live here and in the HUD.
+- **Settings & Input** *(inferred)*. Named input actions for keys, mouse and gamepad, plus the Audio, Graphics, Controls and Accessibility tabs. The brief's menus name them; a gamepad layout ships at MVP (owner decision 2026-11-16, for the 60 fps Steam Deck target); accessibility options live here and in the HUD. Designed 2026-11-16: `design/gdd/settings-input.md`.
 - **Scene Flow & Loading** *(inferred)*. Menu → shack → pond → other ponds and areas, with the kayak push-off cutscene and area loading screens. Each pond is its own level.
-- **Retro Rendering** *(inferred)*. Low internal resolution, vertex wobble, ordered dithering, fog, the CRT option, and the vibrance and blur pass the Chill Meter drives. The art bible fixes the look; this system owns making it work in Godot.
+- **Retro Rendering** *(inferred)*. Low internal resolution, vertex wobble, ordered dithering, fog, the CRT option, and the vibrance and blur pass the Chill Meter drives. The art bible fixes the look; this system owns making it work in Godot. Designed 2026-11-17: `design/gdd/retro-rendering.md`. It also owns the sun's path, which Shade Sweet Spots reads, and the 3:1 shade-gap guarantee.
 
 **Gameplay**
 
@@ -76,34 +76,34 @@ This index was written before the game's five pillars were defined (they are now
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
 | 1 | Player Controller | Core | MVP | Not Started | — | Settings & Input; Gear & Item Database (soft) |
-| 2 | Interaction (E) | Core | MVP | Not Started | — | Player Controller |
-| 3 | Day, Night & Sleep | Core | MVP | Not Started | — | — |
-| 4 | Settings & Input (inferred) | Core | MVP | Not Started | — | — |
+| 2 | Interaction (E) | Core | MVP | Not Started | — | Player Controller; Settings & Input; Day, Night & Sleep |
+| 3 | Day, Night & Sleep | Core | MVP | In Review | design/gdd/day-night-sleep.md | — (soft: Settings & Input; Scene Flow & Loading; Multiplayer) |
+| 4 | Settings & Input (inferred) | Core | MVP | Approved | design/gdd/settings-input.md | — (soft: Multiplayer; Scene Flow & Loading) |
 | 5 | Scene Flow & Loading (inferred) | Core | Vertical Slice | Not Started | — | Save/Load (Repack) |
-| 6 | Retro Rendering (inferred) | Core | MVP | Not Started | — | — |
+| 6 | Retro Rendering (inferred) | Core | MVP | Approved | design/gdd/retro-rendering.md | — (soft: Settings & Input; Day, Night & Sleep; Casting & Tangle) |
 | 7 | Shade Sweet Spots | Gameplay | MVP | Not Started | — | Day, Night & Sleep; Retro Rendering |
-| 8 | Casting & Tangle | Gameplay | MVP | Not Started | — | Player Controller; Gear & Item Database |
-| 9 | Bite Timing | Gameplay | MVP | Not Started | — | Casting & Tangle; Shade Sweet Spots; Fish Database & Spawn Tables; Strains & Unlock Chain; Chill Meter & Smoking; Gear & Item Database |
-| 10 | Reel-in Needle | Gameplay | MVP | Not Started | — | Bite Timing; Fish Database & Spawn Tables; Gear & Item Database |
-| 11 | Chill Meter & Smoking | Gameplay | MVP | Not Started | — | Strains & Unlock Chain; Inventory & Storage; Gear & Item Database; Retro Rendering |
-| 12 | Hunger, Munchies & Drunk | Gameplay | MVP | Not Started | — | Chill Meter & Smoking; Inventory & Storage; Gear & Item Database |
+| 8 | Casting & Tangle | Gameplay | MVP | Not Started | — | Player Controller; Gear & Item Database; Settings & Input |
+| 9 | Bite Timing | Gameplay | MVP | Not Started | — | Casting & Tangle; Shade Sweet Spots; Fish Database & Spawn Tables; Strains & Unlock Chain; Chill Meter & Smoking; Gear & Item Database; Settings & Input; Day, Night & Sleep (soft) |
+| 10 | Reel-in Needle | Gameplay | MVP | Not Started | — | Bite Timing; Fish Database & Spawn Tables; Gear & Item Database; Settings & Input |
+| 11 | Chill Meter & Smoking | Gameplay | MVP | Not Started | — | Strains & Unlock Chain; Inventory & Storage; Gear & Item Database; Retro Rendering; Settings & Input |
+| 12 | Hunger, Munchies & Drunk | Gameplay | MVP | Not Started | — | Chill Meter & Smoking; Inventory & Storage; Gear & Item Database; Settings & Input (soft); Day, Night & Sleep (soft) |
 | 13 | Strains & Unlock Chain | Progression | MVP | Not Started | — | Fish Database & Spawn Tables; Fishing Log & Unc |
 | 14 | Pond & Area Travel | Progression | Alpha | Not Started | — | Fishing Log & Unc; Economy; Scene Flow & Loading; Fish Database & Spawn Tables (soft) |
 | 15 | Lost Legends | Progression | Alpha | Not Started | — | Strains & Unlock Chain; Fishing Log & Unc; Pond & Area Travel; Bite Timing; Fish Database & Spawn Tables |
 | 16 | Fishing Log & Unc | Progression | MVP | Not Started | — | Fish Database & Spawn Tables |
 | 17 | Fish Database & Spawn Tables | Economy | MVP | Approved | design/gdd/fish-database-spawn-tables.md | — |
 | 18 | Gear & Item Database (inferred) | Economy | MVP | Approved | design/gdd/gear-item-database.md | Fish Database & Spawn Tables (soft) |
-| 19 | Inventory & Storage | Economy | MVP | Not Started | — | Gear & Item Database; Fish Database & Spawn Tables |
-| 20 | Economy | Economy | MVP | Not Started | — | Fish Database & Spawn Tables; Gear & Item Database; Strains & Unlock Chain |
+| 19 | Inventory & Storage | Economy | MVP | Not Started | — | Gear & Item Database; Fish Database & Spawn Tables; Day, Night & Sleep |
+| 20 | Economy | Economy | MVP | Not Started | — | Fish Database & Spawn Tables; Gear & Item Database; Strains & Unlock Chain; Day, Night & Sleep |
 | 21 | Shop (Jane) | Economy | Alpha | Not Started | — | Economy; Gear & Item Database; Inventory & Storage; Deliveries & Drop Box |
 | 22 | Deliveries & Drop Box | Economy | MVP | Not Started | — | Day, Night & Sleep; Economy; Inventory & Storage; Interaction (E) |
 | 23 | Cosmetics (inferred) | Progression | Full Vision | Not Started | — | Inventory & Storage; Fishing Log & Unc; Gear & Item Database (soft) |
-| 24 | Save/Load (Repack) | Persistence | Vertical Slice | Not Started | — | Gear & Item Database (soft) |
-| 25 | Flip Phone & FishMail | UI | Vertical Slice | Not Started | — | Economy; Shop (Jane); Deliveries & Drop Box; Fishing Log & Unc; Pond & Area Travel; Multiplayer |
-| 26 | HUD & Catch Banner (inferred) | UI | MVP | Not Started | — | Chill Meter & Smoking; Hunger, Munchies & Drunk; Casting & Tangle; Bite Timing; Reel-in Needle; Economy; Fish Database & Spawn Tables (soft) |
-| 27 | Main Menu & Intro (inferred) | UI | Vertical Slice | Not Started | — | Save/Load (Repack); Settings & Input; Scene Flow & Loading |
+| 24 | Save/Load (Repack) | Persistence | Vertical Slice | In Review | design/gdd/save-load.md | Gear & Item Database (soft); Settings & Input (soft); Day, Night & Sleep |
+| 25 | Flip Phone & FishMail | UI | Vertical Slice | Not Started | — | Economy; Shop (Jane); Deliveries & Drop Box; Fishing Log & Unc; Pond & Area Travel; Multiplayer; Settings & Input |
+| 26 | HUD & Catch Banner (inferred) | UI | MVP | Not Started | — | Chill Meter & Smoking; Hunger, Munchies & Drunk; Casting & Tangle; Bite Timing; Reel-in Needle; Economy; Fish Database & Spawn Tables (soft); Settings & Input (soft) |
+| 27 | Main Menu & Intro (inferred) | UI | Vertical Slice | Not Started | — | Save/Load (Repack); Settings & Input; Scene Flow & Loading; Day, Night & Sleep |
 | 28 | Home & Dock Menus (inferred) | UI | Vertical Slice | Not Started | — | Inventory & Storage; Deliveries & Drop Box; Pond & Area Travel; Interaction (E) |
-| 29 | Audio | Audio | Vertical Slice | Not Started | — | Scene Flow & Loading; Day, Night & Sleep |
+| 29 | Audio | Audio | Vertical Slice | Not Started | — | Scene Flow & Loading; Day, Night & Sleep; Settings & Input (soft) |
 | 30 | Multiplayer | Network | Alpha | Not Started | — | Player Controller; Save/Load (Repack); every gameplay system |
 
 ---
@@ -144,7 +144,7 @@ Counts: 19 MVP · 6 Vertical Slice · 4 Alpha · 1 Full Vision.
 
 1. Fish Database & Spawn Tables — every catch, price, log entry and unlock reads it.
 2. Gear & Item Database — defines the stat-modifier contract that cast, bite, needle and meters read.
-3. Settings & Input — every control goes through its named actions.
+3. Settings & Input — every control goes through its named actions. Its GDD (2026-11-16) names the hard dependents: Player Controller, Interaction, Casting & Tangle, Bite Timing, Reel-in Needle, Chill Meter & Smoking, Flip Phone & FishMail, Main Menu & Intro; soft: HUD, Retro Rendering, Audio, and every system on game time (the solo pause).
 4. Day, Night & Sleep — the clock that shade, payouts, deliveries and spoilage hang on.
 5. Retro Rendering — the frame every visual system is drawn through.
 6. Save/Load (Repack) — defines what a save is, including whose save co-op progress belongs to. (Soft: stores Gear & Item Database ids.)
@@ -261,11 +261,11 @@ Chill Meter & Smoking (14) and Hunger, Munchies & Drunk (15) are designed back t
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 30 |
-| Design docs started | 2 |
-| Design docs reviewed | 2 |
-| Design docs approved | 2 |
-| MVP systems designed | 2/19 (Fish Database: Approved at the fourth review, 2026-11-16, lean, 0 blockers; index rows, brief wording and Tuning Knobs done after approval; later the same day, owner decisions added a missing-rarity Chill term, the YAK split knob, rule 11 and AC-45 to AC-49, not re-reviewed; Gear & Item Database: Approved at the third review, 2026-11-16, lean, 0 blockers; recommended items 1–4 and Open Question 1 settled after approval) |
-| Vertical Slice systems designed | 0/6 |
+| Design docs started | 6 |
+| Design docs reviewed | 5 |
+| Design docs approved | 4 |
+| MVP systems designed | 5/19 (counts corrected 2026-11-17 to include Day, Night & Sleep; Retro Rendering: Designed 2026-11-17, lean; first design review 2026-11-17 NEEDS REVISION, 1 blocker (CRT darkening counted in the wrong colour space), fixed the same day with all 9 recommended items; Approved at the second review, 2026-11-17, lean, 0 blockers; its 3 recommended items (dither margin on the load check, AC-12 capture times, rule 15 gap match) applied after approval, not re-reviewed; Settings & Input: Designed 2026-11-16, lean; five design reviews, all NEEDS REVISION (the fifth, 2026-11-17, found 1 blocker, the unconfirmed display mode being saved; fixed the same day with six recommended items); Approved at the sixth review, 2026-11-17, lean, 0 blockers, 8 recommended items open (review log entry not yet written); Fish Database: Approved at the fourth review, 2026-11-16, lean, 0 blockers; index rows, brief wording and Tuning Knobs done after approval; later the same day, owner decisions added a missing-rarity Chill term, the YAK split knob, rule 11 and AC-45 to AC-49, not re-reviewed; Gear & Item Database: Approved at the third review, 2026-11-16, lean, 0 blockers; recommended items 1–4 and Open Question 1 settled after approval) |
+| Vertical Slice systems designed | 1/6 (Save/Load (Repack): Designed 2026-11-17, lean; first design review 2026-11-17 NEEDS REVISION, 3 blockers (wake-up save timing, shack vs pond, Settings quit path), fixed the same day with the recommended items, re-review pending; owner decisions: 3 slots, saves at wake-up and Turn & Burn (window close counts), guest records by Steam ID in the host's save) |
 
 ---
 

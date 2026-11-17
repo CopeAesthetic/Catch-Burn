@@ -54,7 +54,7 @@
 #   in any other shape is reported as unsupported layout, with its number.
 
 version: 1
-last_updated: "2026-11-16"
+last_updated: "2026-11-17"
 
 # ─── ENTITIES ────────────────────────────────────────────────────────────────
 # Named game-world objects: enemies, NPCs, characters, factions, bosses.
@@ -184,11 +184,62 @@ formulas:
       - pct_floor
       - pct_cap
       - factor
-    output_range: [0, 999]
+    output_range: "never below 0; half to twice the base before factors at the starting pct_floor and pct_cap; factors at most x6 with shipped data"  # was: [0, 999] before 2026-11-17 (not in the source GDD)
     expression: "max(0, base + min(sum(flat), flat_max)) * clamp(1 + sum(percent), 1 + pct_floor, 1 + pct_cap) * product(factor)"
     notes: "How gear changes any stat another system owns. Flats add up to a per-key flat_max (stackable flat keys only), percents add (owner decision 2026-11-16), factors (smoking item, mask) multiply. Mask factors apply only with a smoking item equipped. Only the best owned ladder step counts. Each gameplay system supplies its own base. Was: no flat_max (revised by the gear design review, 2026-11-16)."
     added: 2026-11-16
-    revised: 2026-11-16
+    revised: 2026-11-17
+
+  - name: sun_direction
+    status: active
+    source: design/gdd/retro-rendering.md
+    referenced_by:
+      - design/gdd/retro-rendering.md
+    variables:
+      - time_of_day
+      - sunrise_hour
+      - night_start_hour
+      - sun_elev_min_deg
+      - sun_elev_max_deg
+      - pond_north_deg
+    output_range: [10, 58]
+    expression: "p = clamp((t - sunrise_hour) / (night_start_hour - sunrise_hour), 0, 1); azimuth = 90 + 180*p + pond_north_deg; elevation = sun_elev_min_deg + (sun_elev_max_deg - sun_elev_min_deg) * sin(pi*p)"
+    notes: "Output range is the sun's elevation in degrees at the defaults (10 at sunrise and sunset, 58 at solar noon); azimuth runs east 90 through south 180 to west 270. A pure function of the host clock, owned by Retro Rendering (owner decision 2026-11-17) and read by Shade Sweet Spots so shade and sun agree on every co-op peer. sunrise_hour (6.0, constant) and night_start_hour come from Day, Night & Sleep Formulas 1 and 2."
+    added: 2026-11-17
+    revised: 2026-11-17
+
+  - name: shade_gap
+    status: active
+    source: design/gdd/retro-rendering.md
+    referenced_by:
+      - design/gdd/retro-rendering.md
+    variables:
+      - LitWater
+      - ShadeWater
+      - water_light
+      - f_c
+      - b
+      - m
+    output_range: [1, 21]
+    expression: "lit = b*m*((1-f_c)*(LitWater*water_light) + f_c*sky_fog_color); shade = same with ShadeWater; C = (Y(lit) + 0.05) / (Y(shade) + 0.05), Y = relative luminance in linear light. f_c = fog at casting range (0 by Formula 4), b = Brightness gain, m = CRT mean darkening in linear light"
+    notes: "Contrast ratio between lit and shaded water at casting range (owner decision 2026-11-17: contrast ratio, not plain luminance ratio). Must be >= shade_gap_min whenever Shade Sweet Spots provides shapes, at every region, time of day, Brightness 0.8-1.2, vibrance and CRT state. North East palette gives 3.47 at noon. Vibrance cannot change it (luminance-preserving). m is a linear factor only because the CRT pass darkens in linear light (rule 12, first design review 2026-11-17)."
+    added: 2026-11-17
+    revised: 2026-11-17
+
+  - name: night_start_hour
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+      - design/gdd/retro-rendering.md
+    variables:
+      - warn1_lead_s
+      - clock_rate
+    output_range: [16.5, 22.5]
+    expression: "night_start_hour = 24 - warn1_lead_s * clock_rate, clock_rate = (24 - sunrise_hour) / day_length_s"
+    notes: "Hour Night begins and the first warning fires (Day, Night & Sleep Formula 2; 21.0 at the defaults day_length_s 1080, warn1_lead_s 180). Shade ends here, Retro Rendering's sun sets here (its Formula 2) and its Sunset light key is fully in (its Formula 3). The load check refuses dawn_end_hour < dusk_start_hour < night_start_hour being out of order. Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
+    revised: ""
 
 # Example:
 #
@@ -300,6 +351,39 @@ constants:
     added: 2026-11-16
     revised: ""
 
+  - name: assist_mash_rate
+    status: active
+    source: design/gdd/settings-input.md
+    referenced_by:
+      - design/gdd/settings-input.md
+    value: 5
+    unit: presses per second
+    notes: "Tangle Hold mode counts a held fish action as presses at this rate (Formula 6). Safe range 3-8; set below a keen masher's rate so Hold is comfortable, not fastest (owner decision 2026-11-16). Casting & Tangle owns presses needed; gear tangle_escape applies per counted press."
+    added: 2026-11-16
+    revised: ""
+
+  - name: ui_max_panel_height
+    status: active
+    source: design/gdd/settings-input.md
+    referenced_by:
+      - design/gdd/settings-input.md
+    value: 480
+    unit: px at the 1280x720 UI reference
+    notes: "Tallest a single UI panel (the open Flip Phone included) may be authored so it fits at UI scale 150% (720 / 1.5, Formula 5)."
+    added: 2026-11-16
+    revised: ""
+
+  - name: ui_max_panel_width
+    status: active
+    source: design/gdd/settings-input.md
+    referenced_by:
+      - design/gdd/settings-input.md
+    value: 853
+    unit: px at the 1280x720 UI reference
+    notes: "Widest a single UI panel (the open Flip Phone included) may be authored so it fits at UI scale 150% (1280 / 1.5 = 853.3, rounded down, Formula 5). Pairs with ui_max_panel_height."
+    added: 2026-11-17
+    revised: ""
+
   - name: yak_legendary_share
     status: active
     source: design/gdd/fish-database-spawn-tables.md
@@ -342,6 +426,85 @@ constants:
     unit: multiplier
     notes: "The Gas Mask doubles both chill_per_hit and grams_per_hit of the equipped smoking item (brief, Smoking section). Chill Meter and Smoking owns each strain's base."
     added: 2026-11-16
+    revised: ""
+
+  - name: internal_height
+    status: active
+    source: design/gdd/retro-rendering.md
+    referenced_by:
+      - design/gdd/retro-rendering.md
+    value: 270
+    unit: px (internal render lines)
+    notes: "The 3D world always renders 270 lines tall; width follows the window aspect, clamped 4:3 to 21:9 (480 at 16:9, 432 on the Steam Deck). Not a setting (Settings & Input rule 8). The HUD draws at native resolution, not at this height."
+    added: 2026-11-17
+    revised: ""
+
+  - name: shade_gap_min
+    status: active
+    source: design/gdd/retro-rendering.md
+    referenced_by:
+      - design/gdd/retro-rendering.md
+    value: 3.0
+    unit: contrast ratio
+    notes: "Art bible Vibrance rule 3 (about 3:1), measured with the shade_gap formula; the minimum the screen must show. The load check asks for 3.03 (plus quant_margin 0.03 for the 5-bit dither), which forces fog to start past the longest cast and water light at Sunrise and Sunset to stay >= 0.92 of noon (Retro Rendering Formula 5, second design review 2026-11-17)."
+    added: 2026-11-17
+    revised: 2026-11-17
+
+  - name: fog_start_m
+    status: active
+    source: design/gdd/retro-rendering.md
+    referenced_by:
+      - design/gdd/retro-rendering.md
+    value: 32
+    unit: m
+    notes: "Linear fog starts here and is total at fog_end_m 180. Must be >= cast_max_m + 2 (Retro Rendering Formula 4); cast_max_m is provisionally 30 m pending Casting & Tangle. Fog density never changes with time of day."
+    added: 2026-11-17
+    revised: ""
+
+  - name: max_local_lights
+    status: active
+    source: design/gdd/retro-rendering.md
+    referenced_by:
+      - design/gdd/retro-rendering.md
+    value: 4
+    unit: point lights in view per scene
+    notes: "Per-vertex local lights for the Ember glows (woodstove, beer sign, shack window, lighter). Scenes are authored within it; the 4 nearest are used if exceeded. Second step of the Steam Deck fallback lowers it to 2 on the Deck (Retro Rendering rule 17). For art bible Section 8 (asset standards)."
+    added: 2026-11-17
+    revised: ""
+
+  - name: save_slot_count
+    status: active
+    source: design/gdd/save-load.md
+    referenced_by:
+      - design/gdd/save-load.md
+    value: 3
+    unit: save slots per Steam user
+    notes: "Owner decision 2026-11-17. New Sesh picks a slot (a used one asks to replace it); Repack lists used slots with day, area, play time and last-saved date. Main Menu & Intro shows them. Settings never live in a slot (Settings & Input rule 15)."
+    added: 2026-11-17
+    revised: ""
+
+  - name: guest_record_cap
+    status: active
+    source: design/gdd/save-load.md
+    referenced_by:
+      - design/gdd/save-load.md
+    value: 24
+    unit: guest player records per save
+    notes: "Owner decision 2026-11-17. In co-op the host's save holds one player record per guest Steam ID; past the cap, the not-present guest with the lowest last_seen_s (save play time) is removed, ties to the lower Steam ID. Range 3-64. The host's own record is never removed (Save/Load Formula 1)."
+    added: 2026-11-17
+    revised: ""
+
+  - name: sunrise_hour
+    status: active
+    source: design/gdd/day-night-sleep.md
+    referenced_by:
+      - design/gdd/day-night-sleep.md
+      - design/gdd/retro-rendering.md
+      - design/gdd/save-load.md
+    value: 6.0
+    unit: in-game hour
+    notes: "The hour every day starts (Day, Night & Sleep Formula 1, constant: the art bible's sunrise and the brief's sunrise to midnight). Retro Rendering's sun path and Sunrise light key start here; Save/Load's wake-up save holds time_of_day 6.0. Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
     revised: ""
 
 # Example:

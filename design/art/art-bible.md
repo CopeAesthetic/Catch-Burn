@@ -113,7 +113,7 @@ No supporting shape may out-contrast a hero shape.
 
 | Name | Hex | Role and meaning |
 |---|---|---|
-| Fog Pale | `#C9CFC6` | Sky, fog, far shore. The quiet everything fades into. |
+| Fog Pale | `#C9CFC6` | Sky, fog, far shore. The quiet everything fades into. Note (owner decision 2026-11-17, `design/gdd/retro-rendering.md`): the sky and fog light keys carry about 10–15% saturation so the vibrance climb can colour the sky; the North East Day horizon and fog are `#B3C8C8`. |
 | Lit Water | `#7FA3A0` | Open water. Slow bites. |
 | Shade Water | `#2F4A4C` | Tree shadow on water. The sweet spot, and the darkest large daytime shape. |
 | Spruce | `#3E5A45` | Treeline, the main vertical mass. |

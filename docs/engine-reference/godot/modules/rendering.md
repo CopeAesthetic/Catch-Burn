@@ -1,6 +1,6 @@
 # Godot Rendering — Quick Reference
 
-Last verified: 2026-10-21 (Windows driver default, Compositor); 2026-10-17 (4.7 changes); 2026-02-12 (rest) | Engine: Godot 4.7
+Last verified: 2026-11-17 (low-res retro rendering APIs, from the official 4.7 class docs); 2026-10-21 (Windows driver default, Compositor); 2026-10-17 (4.7 changes); 2026-02-12 (rest) | Engine: Godot 4.7
 
 ## What Changed Since ~4.3 (LLM Cutoff)
 
@@ -70,6 +70,21 @@ Project Settings → Rendering → Renderer:
 Windows default driver: Vulkan; D3D12 only when `rendering/rendering_device/driver.windows`
 is set to `d3d12` (Godot source, main/main.cpp at 4.6, 4.7 and 4.7.2)
 ```
+
+### Low-Resolution Retro Rendering (verified 2026-11-17)
+Read on docs.godotengine.org/en/stable, whose pages are headed "Godot Engine 4.7 documentation". Gathered for `design/gdd/retro-rendering.md`, Open Question 2.
+- **3D render scale with nearest-neighbour:** `Viewport.scaling_3d_mode` includes `SCALING_3D_MODE_NEAREST` (= 5), "Use nearest-neighbor filtering for the viewport's 3D buffer." The page recommends whole-divisor scales such as 0.5 or 0.25. The 2D canvas (UI) is not scaled by it. (class_viewport.html)
+- **Depth fog:** `Environment.fog_mode` is `FOG_MODE_EXPONENTIAL` (= 0, the default) or `FOG_MODE_DEPTH` (= 1), "a simple fog model defined by start and end positions and a custom curve." Its properties are `fog_depth_begin` (default 10.0), `fog_depth_end` (default 100.0) and `fog_depth_curve` (default 1.0). (class_environment.html)
+- **Tonemapping:** `tonemap_mode` values are `TONE_MAPPER_LINEAR` (= 0), `REINHARDT`, `FILMIC`, `ACES` and `AGX`. Linear "does not modify color data". `tonemap_exposure` and `tonemap_white` both default to 1.0. (class_environment.html)
+- **Off by default:** `glow_enabled`, `ssao_enabled`, `ssr_enabled`, `ssil_enabled` and `sdfgi_enabled` all default to `false`. (class_environment.html)
+- **Per-vertex lighting exists:** BaseMaterial3D `shading_mode` has `SHADING_MODE_PER_VERTEX` (= 2), and spatial shaders take `render_mode vertex_lighting`. When vertex lighting is on, `light()` does not run. The project setting is labelled "Force Vertex Shading" and is on by default on mobile. (class_basematerial3d.html, spatial_shader.html)
+- **Varying qualifiers:** only `flat` and `smooth` (the default) are listed, with no `noperspective`. For PS1 affine texture mapping, pass `uv * w` and `w` as smooth varyings and divide in `fragment()`. (shading_language.html)
+- **NOT VERIFIED; check in an engine prototype before relying on them:**
+  - whether per-vertex shading is honoured under the Forward+ renderer (no page states renderer support);
+  - the allowed range of `scaling_3d_scale` (for example 0.1875 = 270 / 1440);
+  - whether `CompositorEffect`s run at the scaled 3D resolution;
+  - whether `FOG_MODE_DEPTH` measures radial distance or view depth;
+  - the default of `display/window/hdr/request_hdr_output` (seen only in a page summary as `false`).
 
 ## Common Mistakes
 - Assuming D3D12 is the default driver on Windows (it is Vulkan through 4.7.2; D3D12 is opt-in)
