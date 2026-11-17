@@ -75,7 +75,7 @@ This index was written before the game's five pillars were defined (they are now
 
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
-| 1 | Player Controller | Core | MVP | Not Started | — | Settings & Input |
+| 1 | Player Controller | Core | MVP | Not Started | — | Settings & Input; Gear & Item Database (soft) |
 | 2 | Interaction (E) | Core | MVP | Not Started | — | Player Controller |
 | 3 | Day, Night & Sleep | Core | MVP | Not Started | — | — |
 | 4 | Settings & Input (inferred) | Core | MVP | Not Started | — | — |
@@ -83,24 +83,24 @@ This index was written before the game's five pillars were defined (they are now
 | 6 | Retro Rendering (inferred) | Core | MVP | Not Started | — | — |
 | 7 | Shade Sweet Spots | Gameplay | MVP | Not Started | — | Day, Night & Sleep; Retro Rendering |
 | 8 | Casting & Tangle | Gameplay | MVP | Not Started | — | Player Controller; Gear & Item Database |
-| 9 | Bite Timing | Gameplay | MVP | Not Started | — | Casting & Tangle; Shade Sweet Spots; Fish Database & Spawn Tables; Strains & Unlock Chain; Chill Meter & Smoking |
+| 9 | Bite Timing | Gameplay | MVP | Not Started | — | Casting & Tangle; Shade Sweet Spots; Fish Database & Spawn Tables; Strains & Unlock Chain; Chill Meter & Smoking; Gear & Item Database |
 | 10 | Reel-in Needle | Gameplay | MVP | Not Started | — | Bite Timing; Fish Database & Spawn Tables; Gear & Item Database |
 | 11 | Chill Meter & Smoking | Gameplay | MVP | Not Started | — | Strains & Unlock Chain; Inventory & Storage; Gear & Item Database; Retro Rendering |
-| 12 | Hunger, Munchies & Drunk | Gameplay | MVP | Not Started | — | Chill Meter & Smoking; Inventory & Storage |
+| 12 | Hunger, Munchies & Drunk | Gameplay | MVP | Not Started | — | Chill Meter & Smoking; Inventory & Storage; Gear & Item Database |
 | 13 | Strains & Unlock Chain | Progression | MVP | Not Started | — | Fish Database & Spawn Tables; Fishing Log & Unc |
-| 14 | Pond & Area Travel | Progression | Alpha | Not Started | — | Fishing Log & Unc; Economy; Scene Flow & Loading |
-| 15 | Lost Legends | Progression | Alpha | Not Started | — | Strains & Unlock Chain; Fishing Log & Unc; Pond & Area Travel; Bite Timing |
+| 14 | Pond & Area Travel | Progression | Alpha | Not Started | — | Fishing Log & Unc; Economy; Scene Flow & Loading; Fish Database & Spawn Tables (soft) |
+| 15 | Lost Legends | Progression | Alpha | Not Started | — | Strains & Unlock Chain; Fishing Log & Unc; Pond & Area Travel; Bite Timing; Fish Database & Spawn Tables |
 | 16 | Fishing Log & Unc | Progression | MVP | Not Started | — | Fish Database & Spawn Tables |
-| 17 | Fish Database & Spawn Tables | Economy | MVP | Needs Revision | design/gdd/fish-database-spawn-tables.md | — |
-| 18 | Gear & Item Database (inferred) | Economy | MVP | In Review | design/gdd/gear-item-database.md | Fish Database & Spawn Tables (soft) |
+| 17 | Fish Database & Spawn Tables | Economy | MVP | Approved | design/gdd/fish-database-spawn-tables.md | — |
+| 18 | Gear & Item Database (inferred) | Economy | MVP | Approved | design/gdd/gear-item-database.md | Fish Database & Spawn Tables (soft) |
 | 19 | Inventory & Storage | Economy | MVP | Not Started | — | Gear & Item Database; Fish Database & Spawn Tables |
 | 20 | Economy | Economy | MVP | Not Started | — | Fish Database & Spawn Tables; Gear & Item Database; Strains & Unlock Chain |
 | 21 | Shop (Jane) | Economy | Alpha | Not Started | — | Economy; Gear & Item Database; Inventory & Storage; Deliveries & Drop Box |
 | 22 | Deliveries & Drop Box | Economy | MVP | Not Started | — | Day, Night & Sleep; Economy; Inventory & Storage; Interaction (E) |
-| 23 | Cosmetics (inferred) | Progression | Full Vision | Not Started | — | Inventory & Storage; Fishing Log & Unc |
-| 24 | Save/Load (Repack) | Persistence | Vertical Slice | Not Started | — | — |
+| 23 | Cosmetics (inferred) | Progression | Full Vision | Not Started | — | Inventory & Storage; Fishing Log & Unc; Gear & Item Database (soft) |
+| 24 | Save/Load (Repack) | Persistence | Vertical Slice | Not Started | — | Gear & Item Database (soft) |
 | 25 | Flip Phone & FishMail | UI | Vertical Slice | Not Started | — | Economy; Shop (Jane); Deliveries & Drop Box; Fishing Log & Unc; Pond & Area Travel; Multiplayer |
-| 26 | HUD & Catch Banner (inferred) | UI | MVP | Not Started | — | Chill Meter & Smoking; Hunger, Munchies & Drunk; Casting & Tangle; Bite Timing; Reel-in Needle; Economy |
+| 26 | HUD & Catch Banner (inferred) | UI | MVP | Not Started | — | Chill Meter & Smoking; Hunger, Munchies & Drunk; Casting & Tangle; Bite Timing; Reel-in Needle; Economy; Fish Database & Spawn Tables (soft) |
 | 27 | Main Menu & Intro (inferred) | UI | Vertical Slice | Not Started | — | Save/Load (Repack); Settings & Input; Scene Flow & Loading |
 | 28 | Home & Dock Menus (inferred) | UI | Vertical Slice | Not Started | — | Inventory & Storage; Deliveries & Drop Box; Pond & Area Travel; Interaction (E) |
 | 29 | Audio | Audio | Vertical Slice | Not Started | — | Scene Flow & Loading; Day, Night & Sleep |
@@ -140,18 +140,18 @@ Counts: 19 MVP · 6 Vertical Slice · 4 Alpha · 1 Full Vision.
 
 ## Dependency Map
 
-### Foundation Layer (no dependencies)
+### Foundation Layer (no hard dependencies)
 
 1. Fish Database & Spawn Tables — every catch, price, log entry and unlock reads it.
 2. Gear & Item Database — defines the stat-modifier contract that cast, bite, needle and meters read.
 3. Settings & Input — every control goes through its named actions.
 4. Day, Night & Sleep — the clock that shade, payouts, deliveries and spoilage hang on.
 5. Retro Rendering — the frame every visual system is drawn through.
-6. Save/Load (Repack) — defines what a save is, including whose save co-op progress belongs to.
+6. Save/Load (Repack) — defines what a save is, including whose save co-op progress belongs to. (Soft: stores Gear & Item Database ids.)
 
 ### Core Layer (depends on foundation)
 
-1. Player Controller — depends on: Settings & Input
+1. Player Controller — depends on: Settings & Input; Gear (soft)
 2. Interaction (E) — depends on: Player Controller
 3. Scene Flow & Loading — depends on: Save/Load
 4. Shade Sweet Spots — depends on: Day, Night & Sleep; Retro Rendering
@@ -163,19 +163,19 @@ Counts: 19 MVP · 6 Vertical Slice · 4 Alpha · 1 Full Vision.
 1. Strains & Unlock Chain — depends on: Fish Database; Fishing Log & Unc
 1. Casting & Tangle — depends on: Player Controller; Gear & Item Database
 2. Chill Meter & Smoking — depends on: Strains; Inventory; Gear; Retro Rendering
-3. Hunger, Munchies & Drunk — depends on: Chill Meter; Inventory
-4. Bite Timing — depends on: Casting; Shade; Fish Database; Strains; Chill Meter
+3. Hunger, Munchies & Drunk — depends on: Chill Meter; Inventory; Gear
+4. Bite Timing — depends on: Casting; Shade; Fish Database; Strains; Chill Meter; Gear
 5. Reel-in Needle — depends on: Bite Timing; Fish Database; Gear
 6. Economy — depends on: Fish Database; Gear; Strains
 7. Deliveries & Drop Box — depends on: Day, Night & Sleep; Economy; Inventory; Interaction
 9. Shop (Jane) — depends on: Economy; Gear; Inventory; Deliveries
-10. Pond & Area Travel — depends on: Fishing Log; Economy; Scene Flow
-11. Lost Legends — depends on: Strains; Fishing Log; Pond & Area Travel; Bite Timing
+10. Pond & Area Travel — depends on: Fishing Log; Economy; Scene Flow; Fish Database (soft)
+11. Lost Legends — depends on: Strains; Fishing Log; Pond & Area Travel; Bite Timing; Fish Database
 12. Multiplayer — depends on: Player Controller; Save/Load; every gameplay system
 
 ### Presentation Layer (depends on features)
 
-1. HUD & Catch Banner — depends on: Chill Meter; Hunger; Casting; Bite Timing; Needle; Economy
+1. HUD & Catch Banner — depends on: Chill Meter; Hunger; Casting; Bite Timing; Needle; Economy; Fish Database (soft)
 2. Flip Phone & FishMail — depends on: Economy; Shop; Deliveries; Fishing Log; Travel; Multiplayer
 3. Home & Dock Menus — depends on: Inventory; Deliveries; Travel; Interaction
 4. Main Menu & Intro — depends on: Save/Load; Settings & Input; Scene Flow
@@ -183,9 +183,9 @@ Counts: 19 MVP · 6 Vertical Slice · 4 Alpha · 1 Full Vision.
 
 ### Polish Layer (depends on everything)
 
-1. Cosmetics — depends on: Inventory; Fishing Log & Unc
+1. Cosmetics — depends on: Inventory; Fishing Log & Unc; Gear (soft)
 
-**Bottlenecks.** Fish Database (eleven systems lean on it; its doc, written 2026-11-16, added Lost Legends, Pond & Area Travel, Chill Meter & Smoking, Gear & Item Database and the HUD as direct or soft dependents beyond the six this index first listed) and Gear & Item Database (eight). Multiplayer has the opposite shape: it is designed late, but it constrains how every system holds state from the first line of code ("no singleton state that can't be replicated").
+**Bottlenecks.** Fish Database (eleven systems lean on it; its doc, written 2026-11-16, added Lost Legends, Pond & Area Travel, Chill Meter & Smoking, Gear & Item Database and the HUD as direct or soft dependents beyond the six this index first listed) and Gear & Item Database (eleven, plus Multiplayer; its doc, re-reviewed 2026-11-16, added Player Controller, Bite Timing, Hunger, Cosmetics and Save/Load). Multiplayer has the opposite shape: it is designed late, but it constrains how every system holds state from the first line of code ("no singleton state that can't be replicated").
 
 **Leaf systems.** Cosmetics, Lost Legends, Audio, Main Menu & Intro: nothing depends on them, so they can be designed late.
 
@@ -261,10 +261,10 @@ Chill Meter & Smoking (14) and Hunger, Munchies & Drunk (15) are designed back t
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 30 |
-| Design docs started | 1 |
-| Design docs reviewed | 0 |
-| Design docs approved | 0 |
-| MVP systems designed | 2/19 (Fish Database: In Review, revised after the 2026-11-16 re-review (2 blockers fixed), awaiting a fresh re-review; Gear & Item Database: In Review, revised after the 2026-11-16 design review, awaiting re-review) |
+| Design docs started | 2 |
+| Design docs reviewed | 2 |
+| Design docs approved | 2 |
+| MVP systems designed | 2/19 (Fish Database: Approved at the fourth review, 2026-11-16, lean, 0 blockers; index rows, brief wording and Tuning Knobs done after approval; Gear & Item Database: Approved at the third review, 2026-11-16, lean, 0 blockers; recommended items 1–4 and Open Question 1 settled after approval) |
 | Vertical Slice systems designed | 0/6 |
 
 ---

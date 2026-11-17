@@ -1,12 +1,12 @@
 # Gear & Item Database
 
-> **Status**: Revised after design review 2026-11-16 (pending re-review)
+> **Status**: Approved 2026-11-16 (third review, lean); recommended items and Open Question 1 settled after approval
 > **Author**: owner + design-system skill
 > **Last Updated**: 2026-11-16
 > **Last Verified**: 2026-11-16
 > **Implements Pillar**: Pillar 1 (The High Is the Progression); Pillar 2 (Chill First, Never Punishing); Pillar 4 (Budget Charm)
 > **Creative Director Review (CD-GDD-ALIGN)**: SKIPPED 2026-11-16 — lean mode
-> **Independent review**: 2026-11-16, lean, NEEDS REVISION (4 blocking, 7 recommended). Revised the same day; run `/design-review design/gdd/gear-item-database.md` again in a fresh session.
+> **Independent review**: 2026-11-16, lean, NEEDS REVISION (4 blocking, 7 recommended). Revised the same day. **Re-review 2026-11-16, lean, NEEDS REVISION** (2 blockers, since fixed: the lure bias reaches the Fish Database through Bite Timing's catch request, with AC-24 rewritten; the tag list is closed by Fish Database rule 9, so data rule 4 can run and Open Question 12 is closed). Recommended items folded in afterward (owner request): YAK LOCK bonus in the Pillar 1 note, loop check and lean list (Open Question 15, AC-23 with no flag raised); load order (AC-34); AC-16 waits on Open Question 1; co-op test (AC-33); lure bias type; factor product bounds; Player Fantasy and Tuning Knobs sections; systems-index dependency rows. **Third review 2026-11-16, lean, APPROVED** (0 blocking, 5 recommended; run in the same session as the revisions, so not independent). Fixed after approval: the Fish Database is a contract, not a dependent; `flat_max` safe ranges (rule 10, AC-27); the resolve call's shape (AC-34, AC-36); a lure-data fixture, a float tolerance and a starting-kit negative test (AC-35). Then Open Question 1 closed (stringer ladder and Rope Stringer starter confirmed by the owner). Still open: meter-key units, AC-1 numbers, performance budget, integration ACs; the post-approval edits have not been re-reviewed.
 
 ## Summary
 
@@ -19,6 +19,13 @@ The catalogue of every rod, line, lure, smoking item, mask, cooler, stringer, ka
 The Gear & Item Database is the catalogue of everything the player can own or eat that is not a fish, a strain or a cosmetic: rods, lines, lures, smoking items, the gas mask, coolers, stringers, kayaks, food and beer. It also defines the **stat keys** gear may change (cast distance, bite wait, needle speed and the rest) and the one rule for how several items' changes combine. Each gameplay system owns its own base values; this system owns what gear does to them (systems index, "Gear & Item Database ↔ the systems gear modifies").
 
 The player meets it in the Smoke & Tackle menu, on item cards in the shop, and as the difference a new rod makes on the water. It is where Pillar 1's line is held for gear: an item can make a fish easier to land, faster to bite, or a little likelier within a rarity the strain has already opened, and never anything more. Prices are Economy's; what the player owns and has equipped is Inventory's.
+
+## Player Fantasy
+
+*Drawn from the Summary, Game Feel and Pillars 1 and 4; no new design decision.*
+
+The player should feel they are getting better at fishing, not buying fish. A new rod throws further and makes the needle kinder; a lure leans the bite toward the fish they are after; a bigger bong makes the session hit harder and funnier, with the cost showing in grams. Every item is a tool, never a key: nothing in Jane's shop opens a fish, a rarity or a place (Pillar 1). Gear is cheap-looking and loved, chunky and readable at a glance, and it is never taken away (Pillar 2, Pillar 4).
+
 ## Detailed Design
 
 ### Core Rules
@@ -35,7 +42,7 @@ The player meets it in the Smoke & Tackle menu, on item cards in the shop, and a
 | Smoking item | Tackle Box, smoking slot | Equipped; may be empty, but smoking needs one (brief) | One Hitter |
 | Mask | Tackle Box, mask slot | Equipped; may be empty; only the Gas Mask for now | none |
 | Cooler | Ladder | The best one owned is used automatically | Lunchbox |
-| Stringer | Ladder | The best one owned is used automatically | Rope Stringer (content file; see Open Questions) |
+| Stringer | Ladder | The best one owned is used automatically | Rope Stringer (owner decision 2026-11-16) |
 | Kayak | Ladder | The best one owned is used automatically | Rental Kayak |
 | Food | Fridge or Cooler | Eaten; used up | none |
 | Beer | Fridge only | Drunk; used up | none |
@@ -44,7 +51,7 @@ Strains (and their concentrate versions) belong to Strains & Unlock Chain. Cosme
 
 **What an item record holds**
 
-An id that is never reused; a name and a short name; its kind; its rarity (Common to Legendary); its ladder step, for ladder kinds; a region, for regional foods; a list of **modifiers**; for a lure, a species **tag** and a **bias**; a few **flags** (for example *usable while paddling*, *needs concentrate*, *shareable in co-op*); and its art reference. It holds no price.
+An id that is never reused; a name and a short name; its kind; its rarity (Common to Legendary); its ladder step, for ladder kinds; a region, for regional foods; a list of **modifiers**; for a lure, a species **tag** and a **bias** (a decimal number from 1 to `lure_bias_cap`); a few **flags** (for example *usable while paddling*, *needs concentrate*, *shareable in co-op*); and its art reference. It holds no price.
 
 **Rarity is a label, never a gate.** An item's rarity sets its colour on cards and is a hint for Economy's pricing and the shop's stock. Owning or equipping any item never opens a fish, a rarity, a pond or an area (Pillar 1).
 
@@ -82,22 +89,22 @@ The stat keys are this system's list, and a modifier naming any other key fails 
 
 **Flat keys have a ceiling.** A flat key that several equipped items can stack (`hookset_window`, `line_forgiveness`) carries a `flat_max` in the data: the most its summed flats may add (Formula 1; owner decision 2026-11-16). The ladder keys are bounded by their top step. `munchies`, `hunger` and `drunk` are per-item amounts applied once when the item is eaten, never summed across items, so they carry none.
 
-No stat key reads or changes which rarities or entries are open, and none touches an input of Fish Database Formula 1 except through the Chill state. Smoking items set how fast the Chill meter fills and how long it lasts (`chill_per_hit`, `chill_drain`), and the Chill state is an input to that formula. So gear does shift odds inside rarities a strain has already opened, by way of the Chill state only (owner decision 2026-11-16: intended). At any given Chill state and strain tier gear changes nothing, which AC-23 and AC-26 test. Adding a stat key is a Pillar 1 change for the owner, not a data edit.
+No stat key reads or changes which rarities or entries are open, and none touches an input of Fish Database Formula 1 except through the Chill state. Smoking items set how fast the Chill meter fills and how long it lasts (`chill_per_hit`, `chill_drain`), and the Chill state is an input to that formula. So gear does shift odds inside rarities a strain has already opened, by way of the Chill Meter only (owner decision 2026-11-16: intended): through the Chill state, and through the YAK LOCK bonus the Chill Meter raises, which the Fish Database pays as an Epic or Legendary only at tier 3 or 4, where both are already open (Fish Database, "How a cast becomes a catch", step 2). At any given Chill state and strain tier, with no flag raised, gear changes nothing, which AC-23 and AC-26 test. Adding a stat key is a Pillar 1 change for the owner, not a data edit.
 
-**The lure's bias** is not a stat key. A lure carries one species tag from the Fish Database's tag list and a bias from 1 to `lure_bias_cap` (3, owned by the Fish Database). The Fish Database reads it when it picks an entry within an open rarity.
+**The lure's bias** is not a stat key. A lure carries one species tag from the Fish Database's closed tag list (its rule 9) and a bias from 1 to `lure_bias_cap` (3, owned by the Fish Database). Bite Timing reads it from the loadout and passes it in its catch request; the Fish Database uses it only when it picks an entry within an open rarity, and never calls this system (Fish Database, "How a cast becomes a catch").
 
 **Rules the data must obey**, checked when it loads; anything that breaks one is reported by name and the game does not start with it (the same rule as the Fish Database):
 
 1. Every id is unique.
 2. Every modifier uses a listed stat key and a kind that key allows.
 3. A factor is between 0.25 and 4.
-4. A lure's tag is on the Fish Database's tag list, and its bias is between 1 and `lure_bias_cap`. The Fish Database's doc gives tags only as examples today; it must define the list as closed before this rule can run (Open Questions 12).
+4. A lure's tag is on the Fish Database's closed tag list (its rule 9), and its bias is between 1 and `lure_bias_cap`.
 5. Each ladder has exactly one starter, and each step's ladder values are higher than the step below on every stat it changes (a ladder is strictly better step by step).
 6. Every starting-kit item exists and is the right kind.
 7. No item, modifier or amount is written in code.
 8. The stacking knobs are in range: `pct_floor` from −0.9 to 0, `pct_cap` from 0 to 3, and any per-key override pair of them in the same ranges (Formula 1).
 9. Every percent modifier is between −0.5 and +1.0.
-10. Each stackable flat key (`hookset_window`, `line_forgiveness`) has a `flat_max`, and no single item's flat on it is above that `flat_max`.
+10. Each stackable flat key (`hookset_window`, `line_forgiveness`) has a `flat_max` inside its safe range (`hookset_window` 0.1–1.0 s, `line_forgiveness` 1–4; owner decision 2026-11-16), and no single item's flat on it is above that `flat_max`.
 
 **Equipping and owning (decided 2026-11-16)**
 
@@ -110,16 +117,20 @@ No stat key reads or changes which rarities or entries are open, and none touche
 
 When Bite Timing needs the bite wait, or the Needle its speed, it asks this system for the stat with its own base value and the player's current loadout (equipped Tackle Box items plus the best of each ladder, from Inventory). This system answers with the resolved value from Formula 1. It keeps nothing between asks. In co-op each player's loadout is resolved for that player only.
 
+The call is `resolve(stat_key, base, loadout) → value`. The caller fetches the loadout from Inventory and passes it in with its own base; this system reads nothing but its own data and the arguments. A call made before this database is Ready, or naming a stat key not on the list, is refused with an error naming the state or the key; it never returns a value. Food and beer do not go through this call: Hunger, Munchies & Drunk reads each item's `munchies`, `hunger` and `drunk` amounts straight from its record when it is eaten.
+
 ### States and Transitions
 
 The system holds no player state. Which items are owned and equipped is Inventory's state. The database itself has four states, as the Fish Database's does:
 
 | State | Meaning | Leaves when |
 |---|---|---|
-| Unloaded | Data not read yet | The game starts loading → Checking |
+| Unloaded | Data not read yet | The Fish Database is Ready → Checking |
 | Checking | Data tested against the data rules | All pass → Ready; any fails → Failed |
 | Ready | Values can be asked for | Never, for the life of the session |
 | Failed | A rule broke; the item, ladder or key is named | Only by fixing the data and restarting |
+
+**Load order.** This database starts Checking only once the Fish Database is Ready, because data rule 4 checks every lure against the Fish Database's closed tag list and `lure_bias_cap`. If the Fish Database fails, the game does not start, so this check never runs against a missing list. That is why the Fish Database is a soft dependency: only rule 4 needs it, and every other rule and every stat resolve run without it.
 
 ### Interactions with Other Systems
 
@@ -127,13 +138,13 @@ None of these systems has a design doc yet except the Fish Database, so every ot
 
 | System | Comes in | Goes out | Who owns the line between them |
 |---|---|---|---|
-| Inventory & Storage | The loadout: equipped items, owned ladder steps | Item records, slot rules, the starting kit, ladder order, `stash_slots`, `stringer_slots` | Inventory owns ownership and capacity rules; this system owns what each item is |
+| Inventory & Storage | The loadout (equipped items, owned ladder steps), which each caller fetches from Inventory and passes in | Item records, slot rules, the starting kit, ladder order, `stash_slots`, `stringer_slots` | Inventory owns ownership and capacity rules; this system owns what each item is |
 | Casting & Tangle | A base value and a loadout | Resolved `cast_distance`, `tangle_escape` | Casting owns the base |
-| Bite Timing | A base value and a loadout | Resolved `bite_wait`, `sweet_spot_bonus`, `hookset_window` | Bite Timing owns the base |
+| Bite Timing | A base value and a loadout | Resolved `bite_wait`, `sweet_spot_bonus`, `hookset_window`; the equipped lure's tag and bias, for the catch request | Bite Timing owns the base and assembles the catch request |
 | Reel-in Needle | A base value and a loadout | Resolved `needle_speed`, `green_zone`, `blue_zone`, `line_forgiveness` | The Needle owns the base and every per-rarity number |
 | Chill Meter & Smoking | A base value and a loadout | Resolved `chill_per_hit`, `grams_per_hit`, `chill_drain`; the smoking item's flags | Chill Meter owns each strain's base chill and grams |
 | Hunger, Munchies & Drunk | — | Each food's and beer's `munchies`, `hunger`, `drunk` amounts | Hunger owns the meters and what eating does at 0 or full |
-| Fish Database & Spawn Tables | The tag list; `lure_bias_cap` | The equipped lure's tag and bias | The Fish Database owns the cap and what the bias may touch |
+| Fish Database & Spawn Tables | The closed tag list (its rule 9); `lure_bias_cap` | The equipped lure's tag and bias, carried in Bite Timing's catch request (the Fish Database never calls this system) | The Fish Database owns the cap and what the bias may touch |
 | Player Controller | A base value and a loadout | Resolved `paddle_speed`, `tip_resistance` | The Controller owns the base |
 | Economy | — | Each item's kind and rarity | Economy owns every price |
 | Shop (Jane) | — | The catalogue | The shop owns what is stocked and when |
@@ -157,7 +168,7 @@ The sums and the product run over every modifier on that stat key in the player'
 |----------|------|-------|--------|-------------|
 | `base` | float | ≥ 0 | data file of the owning system | The value with no gear, owned by the system that asks (for example Bite Timing's 5 s wait). |
 | `flat` | float | any; each item's amount | data file | Flat modifiers, added to the base (a rod's hook-set +0.2 s). |
-| `flat_max` | float | > 0, per stackable flat key (start `hookset_window` +0.5 s, `line_forgiveness` +2; proposals, untuned, not yet owner-approved) | data file | The most the summed flats on that key may add. Stops flats from erasing the hook-set test or the needle's miss penalty. |
+| `flat_max` | float | per stackable flat key: `hookset_window` 0.1–1.0 s (start +0.5 s), `line_forgiveness` 1–4 (start +2); the ranges are owner-approved, the starts are untuned proposals (data rule 10) | data file | The most the summed flats on that key may add. Stops flats from erasing the hook-set test or the needle's miss penalty. |
 | `percent` | float | −0.5 to +1.0 per modifier (data rule 9) | data file | Percent modifiers as fractions (−0.15 is −15%). Summed, not multiplied (owner decision 2026-11-16). |
 | `pct_floor` | float | −0.9 to 0 (start −0.5) | data file | The lowest the summed percent may reach. |
 | `pct_cap` | float | 0 to 3 (start +1.0) | data file | The highest the summed percent may reach. |
@@ -179,10 +190,11 @@ The sums and the product run over every modifier on that stat key in the player'
 - A summed percent of −100% or less would make a stat 0 or negative (an instant bite, a frozen needle). The floor of −50% prevents it, and `pct_floor` cannot be set below −0.9.
 - A negative flat larger than the base would go below 0. The `max(0, …)` holds it at 0.
 - A factor of 0 would turn smoking off without saying so. Factors are at least 0.25.
+- Only two slots carry factors (the smoking item and the mask), so with legal data the product of factors on one stat is between 0.0625 (0.25 × 0.25) and 16 (4 × 4). With the shipped data it is between 0.5 (One Hitter grams) and 6 (Dab Rig chill with the Gas Mask).
 - Flats stacking without limit: enough `line_forgiveness` removes the needle's −1 on a miss, and enough `hookset_window` removes the reaction test. `flat_max` holds each.
 - `base` at 0 stays 0 under any percent or factor, though flats still add (the ladder keys rely on this). A system that wants percent gear to matter must not use a base of 0.
 
-**Loop check:** a stronger smoking item fills the meter faster, which reaches better rarity odds sooner (Fish Database Formula 1), which earns more money for better smoking items. That is the intended loop (Pillar 1). It is damped by grams per hit (more weed bought), by smoking draining Hunger faster, and by YAK LOCKED making fishing harder. Gear cannot open a rarity, so the loop speeds progress up but cannot skip it.
+**Loop check:** a stronger smoking item fills the meter faster, which reaches better rarity odds sooner (Fish Database Formula 1), which earns more money for better smoking items. That is the intended loop (Pillar 1). It is damped by grams per hit (more weed bought), by smoking draining Hunger faster, and by YAK LOCKED making fishing harder. A stronger smoking item also reaches YAK LOCKED sooner, and at tier 3 or 4 a raised YAK LOCK bonus is paid as a guaranteed Epic or Legendary (Fish Database, step 2): a reward inside rarities the strain has already opened. How often that bonus can be earned, and whether it lapses, is the Chill Meter's rule (Open Question 15). Gear cannot open a rarity, so the loop speeds progress up but cannot skip it.
 
 **Costs check:** gear is bought once and kept, so each ladder's top step is the dominant purchase for that ladder, a one-time sink Economy must price. Rods trade one stat for another (the Baitcaster: further casts, slower needle) except The Unc Stick, which is better at everything; that is acceptable only if its price is late-game (Economy, and Open Questions).
 
@@ -224,7 +236,7 @@ Not a new formula: each ladder step carries one flat modifier, and only the best
 | Ladder | Steps and values | State |
 |---|---|---|
 | Cooler `stash_slots` | Lunchbox 4 → Hard-Side 6 → Marine 9 → "Big Chill" 12 | Content file |
-| Stringer `stringer_slots` | Rope 5 → Chain 8 → Wire Fish Basket 12 → Floating Livewell 18 | **Proposed in the content file, not confirmed by the owner** |
+| Stringer `stringer_slots` | Rope 5 → Chain 8 → Wire Fish Basket 12 → Floating Livewell 18 | Owner-confirmed 2026-11-16 |
 | Kayak `paddle_speed`, `tip_resistance` (flat, units set by the Player Controller doc) | Rental (adds 0) → Sit-on-Top → Pedal | No numbers yet |
 
 ## Edge Cases
@@ -251,7 +263,7 @@ Not a new formula: each ladder step carries one flat modifier, and only the best
 **Things a player could lean on, and why each is bounded**
 
 - **Stacking every bite-wait modifier.** Held at half the base wait by the floor.
-- **Dab Rig + Gas Mask for instant YAK LOCK.** Intended per the content file ("easy to YAK LOCK"). It costs double concentrate per hit and drains Hunger faster, and YAK LOCKED makes fishing harder.
+- **Dab Rig + Gas Mask for instant YAK LOCK.** Intended per the content file ("easy to YAK LOCK"). It costs double concentrate per hit and drains Hunger faster, and YAK LOCKED makes fishing harder. The reward side is the YAK LOCK bonus, a guaranteed Epic or Legendary at tier 3 or 4. It never opens a rarity; how often it can be earned is bounded by the Chill Meter's rule, not here (Open Question 15).
 - **Buying the top rod and never choosing.** The Unc Stick is better at everything by design; its price has to make it a late reward (Economy).
 
 ## Dependencies
@@ -260,7 +272,7 @@ Not a new formula: each ladder step carries one flat modifier, and only the best
 
 | System | Hard or soft | What it needs |
 |---|---|---|
-| Fish Database & Spawn Tables | Soft | The species tag list, to check lure tags, and `lure_bias_cap`. Designed; its doc already lists this system as a soft dependent. |
+| Fish Database & Spawn Tables | Soft | The closed species tag list (its rule 9), to check lure tags, and `lure_bias_cap`. Approved 2026-11-16; its doc lists this system as a soft dependent. |
 
 **Systems that depend on this one:**
 
@@ -268,11 +280,11 @@ Not a new formula: each ladder step carries one flat modifier, and only the best
 |---|---|---|
 | Inventory & Storage | Hard | Item records, slots, ladders, the starting kit, `stash_slots`, `stringer_slots` |
 | Casting & Tangle | Hard | `cast_distance`, `tangle_escape` |
-| Bite Timing | Hard | `bite_wait`, `sweet_spot_bonus`, `hookset_window` |
+| Bite Timing | Hard | `bite_wait`, `sweet_spot_bonus`, `hookset_window`; the equipped lure's tag and bias, for the catch request |
 | Reel-in Needle | Hard | `needle_speed`, `green_zone`, `blue_zone`, `line_forgiveness` |
 | Chill Meter & Smoking | Hard | `chill_per_hit`, `grams_per_hit`, `chill_drain`, smoking item flags |
 | Hunger, Munchies & Drunk | Hard | Food and beer amounts |
-| Fish Database & Spawn Tables | Soft | The equipped lure's tag and bias |
+| Fish Database & Spawn Tables | Contract only | Nothing read from here: the equipped lure's tag and bias reach it in Bite Timing's catch request, so it should not list this system as a dependency (its doc depends on nothing) |
 | Economy | Hard | Item kind and rarity, to price items |
 | Shop (Jane) | Hard | The catalogue |
 | Player Controller | Soft | `paddle_speed`, `tip_resistance` |
@@ -282,7 +294,24 @@ Not a new formula: each ladder step carries one flat modifier, and only the best
 
 **One-directional for now.** Apart from the Fish Database, none of these has a design doc. Each must list this system among its dependencies when it is written and confirm the stat keys it owns.
 
-**Change to the systems index needed:** row 18 already lists the Fish Database as a soft dependency, and Casting, Needle, Chill Meter, Inventory, Economy and Shop already list this system. The rows for Player Controller (1), Bite Timing (9), Hunger, Munchies & Drunk (12), Cosmetics (23), Save/Load and Multiplayer do not, and this doc names all of them as dependents.
+**Systems index:** row 18 lists the Fish Database as a soft dependency. Casting, Needle, Chill Meter, Inventory, Economy and Shop list this system, and since the 2026-11-16 re-review so do Player Controller (1, soft), Bite Timing (9), Hunger, Munchies & Drunk (12), Cosmetics (23, soft) and Save/Load (24, soft). Multiplayer (30) depends on every gameplay system.
+
+## Tuning Knobs
+
+Every value below lives in the data file; none is written in code (data rule 7). Values outside the safe range fail the load check.
+
+| Knob | Start | Safe range | What it changes | Source |
+|---|---|---|---|---|
+| `pct_floor` | −0.5 | −0.9 to 0 (rule 8) | How far summed percent gear can lower a stat (−0.5: never below half the base) | Formula 1; owner decision 2026-11-16 |
+| `pct_cap` | +1.0 | 0 to 3 (rule 8) | How far summed percent gear can raise a stat (+1.0: never above double) | Formula 1; owner decision 2026-11-16 |
+| Per-key `pct_floor` / `pct_cap` override | none | same ranges (rule 8) | A tighter or looser band for one stat key | Formula 1 |
+| `flat_max` for `hookset_window` | +0.5 s | 0.1 to 1.0 s, so the window never passes 2.5 s; no single item's flat above it (rule 10) | How much gear can widen the hook-set window; too high removes the reaction test | Formula 1; proposal (Open Question 13) |
+| `flat_max` for `line_forgiveness` | +2 | 1 to 4; no single item's flat above it (rule 10) | How many misses gear can absorb; too high removes the needle's miss penalty | Formula 1; proposal (Open Question 13) |
+| Each item's percent amounts | per item | −0.5 to +1.0 each (rule 9) | That item's effect on cast, bite, needle and drain | Content file; Open Question 2 |
+| Each smoking item's factors | Formula 2 table | 0.25 to 4 (rule 3) | Chill gained and grams used per hit | Formula 2; owner-approved scale 2026-11-16 |
+| Gas Mask factor (`gas_mask_factor`) | ×2 | 0.25 to 4 (rule 3) | Doubles the equipped smoking item's chill and grams | Brief, Smoking section |
+| Ladder step values | Formula 3 table | strictly rising step by step (rule 5) | Cooler and stringer capacity; kayak speed and tip resistance | Formula 3; stringer and cooler confirmed, kayak Open Question 3 |
+| Each lure's bias | per lure | 1 to `lure_bias_cap` (rule 4) | How much likelier the lure's tagged fish are within an open rarity | `lure_bias_cap` is the Fish Database's (start 3, range 1–4) |
 
 ## Visual/Audio Requirements
 
@@ -316,8 +345,8 @@ This system has no screen. It must supply what the Smoke & Tackle menu, the Stas
 
 | This document says | It relies on | Where | State |
 |---|---|---|---|
-| A lure carries a tag and a bias up to `lure_bias_cap` | The tag list, the cap, what bias may touch | `design/gdd/fish-database-spawn-tables.md`, Formula 2 | Designed, In Review |
-| No stat key touches rarity odds | Rarity odds | `design/gdd/fish-database-spawn-tables.md`, Formula 1 | Designed, In Review |
+| A lure carries a tag and a bias up to `lure_bias_cap` | The closed tag list, the cap, what bias may touch, the catch request | `design/gdd/fish-database-spawn-tables.md`, rule 9, "How a cast becomes a catch", Formula 2 | Approved 2026-11-16 |
+| No stat key touches rarity odds | Rarity odds | `design/gdd/fish-database-spawn-tables.md`, Formula 1 | Approved 2026-11-16 |
 | Each stat key's base value | Base values | Casting, Bite Timing, Reel-in Needle, Chill Meter, Hunger, Player Controller, Inventory | Not written |
 | Item prices | Pricing | Economy | Not written |
 | What is owned and equipped; capacity rules | Ownership | Inventory & Storage | Not written |
@@ -332,11 +361,13 @@ Checked against the QA lens: every core rule and formula has a criterion, each T
 
 **Data rules** — automated
 
+Tests that load lure data use a fixture Fish Database (tag list `bass`, `panfish`, `trout`; `lure_bias_cap` 3), because the real tag list is content work (Fish Database Open Question 2). Formula results are compared with a tolerance of 0.0001, not exact float equality.
+
 - **AC-1** — **GIVEN** the shipped data, **WHEN** the database loads, **THEN** it reaches Ready and every item named in the content file's shop catalogue is present with the kind and rarity listed there.
 - **AC-2** — **GIVEN** test data with two items sharing an id, **WHEN** it loads, **THEN** the state is Failed and the report names the id.
 - **AC-3** — **GIVEN** test data with a modifier on an unknown stat key, or a percent modifier on `hookset_window`, **WHEN** it loads, **THEN** the state is Failed and the report names the item and the key.
 - **AC-4** — **GIVEN** test data with a factor of 0.1 or of 5, **WHEN** it loads, **THEN** the state is Failed and the report names the item.
-- **AC-5** — **GIVEN** test data with a lure tagged `marlin` (not on the Fish Database's list), or with a bias of 3.5, **WHEN** it loads, **THEN** the state is Failed and the report names the lure.
+- **AC-5** — **GIVEN** the fixture Fish Database and test data with a lure tagged `not_a_tag` (not on the fixture list), or with a bias of 3.5 (above the fixture's `lure_bias_cap` 3), **WHEN** it loads, **THEN** the state is Failed and the report names the lure.
 - **AC-6** — **GIVEN** test data in which the Hard-Side Cooler has 4 stash slots (not above the Lunchbox), or a ladder has two starters, **WHEN** it loads, **THEN** the state is Failed and the report names the ladder.
 - **AC-7** — **GIVEN** test data with `pct_floor` −1.0 or `pct_cap` 4, **WHEN** it loads, **THEN** the state is Failed and the report names the knob.
 - **AC-8** — **GIVEN** the shipped data with one item renamed in the data file only, **WHEN** that item's record is read, **THEN** it carries the new name. (Proves nothing is written in code.)
@@ -358,24 +389,31 @@ Checked against the QA lens: every core rule and formula has a criterion, each T
 - **AC-18** — integration, needs Inventory — **GIVEN** the rod slot holds a rod, **WHEN** the player tries to empty it, **THEN** the request is refused and the same rod stays equipped.
 - **AC-19** — integration, needs Chill Meter & Smoking — **GIVEN** the smoking slot is empty and the Cooler holds weed, **WHEN** the player presses F on the water, **THEN** no hit happens and no weed is used.
 - **AC-20** — integration, needs Hunger and Inventory — **GIVEN** a player with non-starter gear owned and equipped, **WHEN** they drink a 10th beer and black out, **THEN** owned and equipped gear is identical before and after.
-- **AC-21** — automated — **GIVEN** two loadouts, one with the Baitcaster and one with Grandpa's Cane Pole, **WHEN** `needle_speed` is resolved for each with the same base, **THEN** the Baitcaster's is 10% lower and the Cane Pole's equals the base. (Co-op resolves per player.)
+- **AC-21** — automated — **GIVEN** two loadouts, one with the Baitcaster and one with Grandpa's Cane Pole, **WHEN** `needle_speed` is resolved for each with the same base, **THEN** the Baitcaster's is 10% lower and the Cane Pole's equals the base.
 - **AC-22** — automated — **GIVEN** the debug toggle is on, **WHEN** the Graphite Pro Rod is equipped through it, **THEN** `green_zone` resolves to 1.2 × base.
 
 **Across systems**
 
-- **AC-23** — automated, integration with the Fish Database, seeded — **GIVEN** tier 3 at Lil' Puffin' Pond, **WHEN** 100,000 catches are requested once with no gear and once with each rod, each lure, each smoking item and the Gas Mask in turn, at Chill state 1 and again at Chill state 4, **THEN** Legendary and Epic stay inside the Fish Database's bands for that state every time (state 1: 9.5–10.5% and 15.4–16.6%; state 4: 14.9–15.9% and 24.0–25.2%). (Pillar 1: at a given Chill state, gear never changes rarity odds; smoking items change them only by changing the state.)
-- **AC-24** — automated — **GIVEN** a `trout` lure with bias 3 equipped, **WHEN** the Fish Database asks for the lure bias, **THEN** it receives tag `trout` and bias 3.
+- **AC-23** — automated, integration with the Fish Database, seeded — **GIVEN** tier 3 at Lil' Puffin' Pond and no flag raised (no YAK LOCK bonus, no Lost Legend due), **WHEN** 100,000 catches are requested once with no gear and once with each rod, each lure, each smoking item and the Gas Mask in turn, at Chill state 1 and again at Chill state 4, **THEN** Legendary and Epic stay inside the Fish Database's bands for that state every time (state 1: 9.5–10.5% and 15.4–16.6%; state 4: 14.9–15.9% and 24.0–25.2%). (Pillar 1: at a given Chill state, gear never changes rarity odds; smoking items change them only by changing the state.)
+- **AC-24** — automated — **GIVEN** a `trout` lure with bias 3 equipped, **WHEN** Bite Timing asks for the equipped lure's tag and bias, **THEN** it receives tag `trout` and bias 3; and **GIVEN** the lure slot is empty, **THEN** it receives none.
 - **AC-25** — UI, retained screenshot, needs the Smoke & Tackle menu — **GIVEN** the Spincast Combo, **WHEN** its card is shown, **THEN** it reads "+10% cast distance", generated from the data.
 - **AC-26** — automated, integration with the Fish Database, seeded — **GIVEN** tier 1, **WHEN** 10,000 catches are requested once with each lure and each smoking item equipped in turn, **THEN** every catch is Common or Uncommon. (Pillar 1: no item opens a rarity.)
 
 **Flat ceiling, percent range, mask and flags** (added after the 2026-11-16 design review)
 
-- **AC-27** — automated — **GIVEN** `hookset_window` base 1.5, three +0.2 flat modifiers and `flat_max` 0.5, **WHEN** resolved, **THEN** the value is 2.0; and **GIVEN** test data with one item at +0.6 on `hookset_window` (above `flat_max`), or a stackable flat key with no `flat_max`, **WHEN** it loads, **THEN** the state is Failed and the report names the item or key.
+- **AC-27** — automated — **GIVEN** `hookset_window` base 1.5, three +0.2 flat modifiers and `flat_max` 0.5, **WHEN** resolved, **THEN** the value is 2.0; and **GIVEN** test data with one item at +0.6 on `hookset_window` (above `flat_max`), or a stackable flat key with no `flat_max`, **WHEN** it loads, **THEN** the state is Failed and the report names the item or key; and **GIVEN** test data with `flat_max` 0 or 1.2 on `hookset_window`, or 5 on `line_forgiveness`, **WHEN** it loads, **THEN** the state is Failed and the report names the key.
 - **AC-28** — automated — **GIVEN** test data with a percent modifier of −0.6 or +1.1, or a per-key `pct_floor` of −1.0, **WHEN** it loads, **THEN** the state is Failed and the report names the item or key.
 - **AC-29** — automated — **GIVEN** the Gas Mask equipped and the smoking slot empty, **WHEN** `chill_per_hit` is resolved with base 1, **THEN** the value is 1.0; and with the One Hitter also equipped, 2.0.
 - **AC-30** — integration, needs Chill Meter & Smoking and Strains — **GIVEN** the Dab Rig equipped and no concentrate in the Cooler, **WHEN** the player presses F on the water, **THEN** no hit happens and nothing is used up.
 - **AC-31** — integration, needs Chill Meter & Smoking and Player Controller — **GIVEN** the player is paddling, **WHEN** they press F with the Puff-Go equipped, **THEN** a hit happens; and **WHEN** they press F with any other smoking item, **THEN** none does.
 - **AC-32** — automated — **GIVEN** a save holding an item id the data has marked retired, **WHEN** the save loads, **THEN** the game starts, the item is held as an inert item, and no stat changes.
+
+**Co-op, load order and the resolve call** (added after the 2026-11-16 re-review and third review)
+
+- **AC-33** — automated — **GIVEN** two players' loadouts, player A with the Baitcaster and player B with Grandpa's Cane Pole, **WHEN** `needle_speed` is resolved for each with the same base, **THEN** A's is 10% lower and B's equals the base; and **WHEN** A also equips a −15% `bite_wait` lure, **THEN** B's `bite_wait` is unchanged.
+- **AC-34** — automated — **GIVEN** the fixture Fish Database held in Unloaded, **WHEN** this database is told to load, **THEN** it stays Unloaded and checks nothing, and a `resolve` call is refused with an error naming the state; and **WHEN** the fixture reaches Ready, **THEN** this database moves to Checking.
+- **AC-35** — automated — **GIVEN** test data whose starting kit names an item id that does not exist, or puts the Lunchbox in the rod slot, **WHEN** it loads, **THEN** the state is Failed and the report names the starting-kit entry. (Data rule 6; AC-16 is its positive case.)
+- **AC-36** — automated — **GIVEN** the database is Ready, **WHEN** `resolve` is called with the stat key `luck`, **THEN** the call is refused with an error naming the key and no value is returned.
 
 **Not acceptance criteria: playtest questions**
 
@@ -391,7 +429,7 @@ Is a +10% step noticeable within a few catches; does the Dab Rig with the Gas Ma
 
 | # | Question | Who settles it | By when |
 |---|---|---|---|
-| 1 | **Stringer slots 5 → 8 → 12 → 18, and the Rope Stringer as a starter.** The content file proposes both; the brief's starting kit does not list a stringer. | Owner | Before Inventory & Storage is designed (MVP) |
+| 1 | ~~**Stringer slots 5 → 8 → 12 → 18, and the Rope Stringer as a starter.**~~ **Closed 2026-11-16**: the owner confirmed both; the brief's starting kit now lists the Rope Stringer. | Owner | Done |
 | 2 | **Numbers for lines, lures and The Unc Stick.** The content file gives words ("line strength", "species bias", "all rod stats"). Lures also need their tags; only Topwater = bass is named. | Owner and content work | Starter items before the MVP; the rest before Jane (Alpha) |
 | 3 | **Kayak numbers** for `paddle_speed` and `tip_resistance`. | Owner, with the Player Controller doc | Rental Kayak before the MVP |
 | 4 | **Concentrate**: is it a separate item, or a version of each strain? Four smoking items need it. | Strains & Unlock Chain doc | When that doc is written (10th) |
@@ -402,6 +440,7 @@ Is a +10% step noticeable within a few catches; does the Dab Rig with the Gas Ma
 | 9 | **Feasibility is unchecked**: `docs/engine-reference/godot/modules/` has no scripting reference. | Technical director | Technical Setup |
 | 10 | **No performance budget.** | Owner, via `/project-settings` | Before the first build |
 | 11 | **Item prices**, including The Unc Stick's late-game price. | Economy doc | When that doc is written (20th) |
-| 12 | **A closed species-tag list.** Data rule 4 and AC-5 check lure tags against it; the Fish Database doc gives tags only as examples. | Fish Database & Spawn Tables doc (revision) | Before the data check is built |
-| 13 | **`flat_max` values** for `hookset_window` and `line_forgiveness`. The owner chose a per-key ceiling; +0.5 s and +2 are proposals. | Owner, with the Bite Timing and Reel-in Needle docs | When those docs are written |
+| 12 | ~~**A closed species-tag list.**~~ **Closed 2026-11-16**: Fish Database rule 9 defines one closed tag list, which data rule 4 and AC-5 check lure tags against. Writing the full list is content work (Fish Database Open Question 2; lure tags, Open Question 2 here). | Fish Database & Spawn Tables doc | Done |
+| 13 | **`flat_max` values** for `hookset_window` and `line_forgiveness`. The owner chose a per-key ceiling and its safe range (0.1–1.0 s and 1–4, 2026-11-16); the starting +0.5 s and +2 are proposals. | Owner, with the Bite Timing and Reel-in Needle docs | When those docs are written |
 | 14 | **Units of the meter keys** (`munchies`, `hunger`, `drunk`) and the base behind `sweet_spot_bonus` (the 3 s gap, or a share). | Hunger doc; Bite Timing doc | When those docs are written |
+| 15 | **Can fast smoking gear farm the YAK LOCK bonus?** The Dab Rig with the Gas Mask reaches YAK LOCKED fastest, and each bonus pays an Epic or Legendary at tier 3 or 4. How often the bonus is earned, and whether it lapses, bounds this. | Chill Meter & Smoking doc | When that doc is written |

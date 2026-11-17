@@ -33,47 +33,15 @@ Task:
 <!-- /STATUS -->
 
 <!-- CHECKPOINT -->
-- Task: gear-item-database GDD, 2026-11-16
-- Status: Complete: Designed, pending independent review (lean: specialists and CD-GDD-ALIGN skipped)
-- File: design/gdd/gear-item-database.md
-- Sections: Summary, Overview, Detailed Design, Formulas, Edge Cases, Dependencies, Visual/Audio, Game Feel, UI Requirements, Cross-References, Acceptance Criteria (25), Open Questions (11)
-- Owner decisions: percents add; held -50%..+100%; gear never lost; MVP = starting kit + debug unlock; ladders use best owned; smoking scale low 1.0 .. max 3.0
-- Registry: +stat_value formula, +pct_floor, +pct_cap, +gas_mask_factor; lure_bias_cap referenced_by gear
-- Fish Database: In Review (revised after 2026-11-16 review); game concept re-reviewed APPROVED, 6 wording fixes applied
-- Next, each in a FRESH session: /design-review design/gdd/gear-item-database.md; /design-review design/gdd/fish-database-spawn-tables.md; then /design-system Settings & Input (3rd)
+- Task: Foundation GDDs closed out, 2026-11-16 (branch setup/studio-template)
+- Status: Fish Database Approved (4th review, lean); Gear & Item Database Approved (3rd review, lean, same session as its revisions, so not independent)
+- Files: design/gdd/fish-database-spawn-tables.md, design/gdd/gear-item-database.md; both have all 8 sections
+- After approval (not re-reviewed): Gear recommended items 1-4 (Fish DB is a contract; flat_max ranges 0.1-1.0 s and 1-4; resolve(stat_key, base, loadout); fixture, AC-35, AC-36); Gear OQ 1 closed (stringer 5/8/12/18, Rope Stringer starter); Fish Tuning Knobs and Player Fantasy added; brief kit and Straight Fire wording; index dependency rows and counts
+- Owner decisions today: flat_max safe ranges; stringer ladder and Rope Stringer starter; brief Straight Fire excludes Lost Legends
+- Open: Gear OQ 14 (meter units), AC-1 needs item numbers, no performance budget (OQ 10), integration ACs wait on other docs; Fish log has no entry for its 4th review
+- Next, in a FRESH session: /design-system Settings & Input (3rd in design order)
 - Gate: Concept -> Systems Design is CONCERNS; stage still Concept
-- Git: last pushed 46474b1; uncommitted: game-concept fixes, gear GDD, registry, systems index, this file
-<!-- /CHECKPOINT -->` is free-form narrative for humans
-       and for a returning agent that wants detail. No hook ever injects it, so
-       it may grow — but see Rotation below.
-
-  Why the split exists: one append-only file doing both jobs grows without
-  bound, and every consumer then reads a different slice of it: the top, the
-  bottom, or a block nothing writes. They disagree because there is no contract
-  to agree on. With the named regions, every consumer reads the same part.
-
-  ROTATION. When the narrative below grows past ~200 lines, move it to
-  `production/session-logs/` and start it fresh:
-      bash .claude/scripts/rotate-session-state.sh
-  Nothing is lost — and the commit history already records most of what the
-  narrative repeats.
--->
-
-<!-- STATUS -->
-Epic:
-Feature:
-Task:
-<!-- /STATUS -->
-
-<!-- CHECKPOINT -->
-- Task: fish-database-spawn-tables GDD, 2026-11-16
-- Status: In Review. /design-review 2026-11-16 (lean) gave NEEDS REVISION; 3 blockers fixed, ACs 31-37 added; 5 recommended items open (co-op inputs, states wording, Tuning Knobs table, Straight Fire vs Lost Legend wording, index dependency rows)
-- File: design/gdd/fish-database-spawn-tables.md
-- Sections: Summary, Overview, Detailed Design, Formulas, Edge Cases, Dependencies, Acceptance Criteria, Visual/Audio Requirements, Game Feel, UI Requirements, Cross-References, Open Questions (Player Fantasy and Tuning Knobs skipped at standard)
-- Registry: 3 formulas and 7 constants added to design/registry/entities.yaml
-- Next, each in a FRESH session: /design-review design/gdd/fish-database-spawn-tables.md (re-review, decides Approved); /design-review design/gdd/game-concept.md; then /design-system Gear & Item Database
-- Gate: Concept -> Systems Design is CONCERNS; stage still Concept; owner has not accepted the concerns
-- Git: last commit 4409c8a pushed; uncommitted since: fish-database GDD revision, systems-index status, new review log
+- Git: nothing committed this session; uncommitted: both GDDs, Gear review log, systems index, brief, content file, this file
 <!-- /CHECKPOINT -->
 
 ---

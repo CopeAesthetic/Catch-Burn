@@ -450,7 +450,7 @@ Rarity colours follow the fish ladder: Common (white) · Uncommon (green) · Rar
 | Mono Line → Fluoro → Braid → Super Braid | Common → Epic | Line strength (misses allowed before −1 hits) and tangle-escape speed |
 | Worm & Bobber, Inline Spinner, Crankbait, Soft Plastic, Spoon, Jig, Topwater Frog, Swimbait, Fly | Common → Legendary | Bite wait time −%, sweet-spot bonus, species bias (e.g., Topwater = bass) |
 | Cooler upgrades: Lunchbox → Hard-Side Cooler → Marine Cooler → "Big Chill" Roto-Molded Cooler | Common → Epic | Stash slots 4 → 6 → 9 → 12 |
-| Stringer upgrades: Rope Stringer (starter) → Chain Stringer → Wire Fish Basket → Floating Livewell | Common → Epic | Fish you can carry in the kayak: 5 → 8 → 12 → 18 (slot counts proposed, not confirmed) |
+| Stringer upgrades: Rope Stringer (starter) → Chain Stringer → Wire Fish Basket → Floating Livewell | Common → Epic | Fish you can carry in the kayak: 5 → 8 → 12 → 18 (slot counts confirmed by the owner 2026-11-16) |
 | Kayak upgrades: Rental Kayak → Sit-on-Top → Pedal Kayak | Common → Epic | Paddle speed, wobble/tip resistance (co-op physics) |
 
 ### Smoking Items (the real-world usage ladder: cheap smoking gear first, concentrates late)

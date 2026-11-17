@@ -129,7 +129,7 @@ After play: "That felt great. good job."
 
 First-person, **WASD** to move, **E** to interact.
 
-**[DECIDED] Starting kit:** Grandpa's Cane Pole, the Lunchbox cooler, the Rental Kayak, a One Hitter and $0.
+**[DECIDED] Starting kit:** Grandpa's Cane Pole, the Lunchbox cooler, the Rope Stringer, the Rental Kayak, a One Hitter and $0. (Rope Stringer added 2026-11-16.)
 
 Inside the shack:
 1. **Bed** — sleep to skip the night (deliveries arrive while you sleep). **[DECIDED]** You can fish till midnight. At midnight you drift off, wake up in your bed, and miss the chance to sell. Fish that are not in The Drop Box when you sleep spoil: a spoiled fish only fetches the Quick Sell price, even in The Drop Box. **[DECIDED]** A day lasts about 15–20 minutes from sunrise to midnight, as a starting value to tune. **[PROPOSED]** Night has no shade sweet spots and slower bites; you can go to bed at any hour; deliveries still arrive after a drift-off.
@@ -183,7 +183,7 @@ On the dock:
 
 **Lost Legends (endgame):** hidden until all **288** non-Lost-Legend fish (8 areas × 4 ponds × 9) are caught. There is **one Lost Legend per pond (32 total)**. To hook a pond's Lost Legend, smoke the **Top Shelf of the next pond in the same area** (Pond 1 → needs Pond 2's Top Shelf, Pond 2 → Pond 3's, Pond 3 → Pond 4's); **each area's Pond 4 needs the Top Shelf from Pond 1 of that same area**. Your next cast hooks the Lost Legend. Catching it unlocks that pond's **Straight Fire** strain. Lost Legends are photographed and released, not sold. **[DECIDED]** Confirmed; the reward is the Straight Fire unlock plus a trophy photo in Unc's log. **[DECIDED]** Lost Legends are separate from pond and area unlocks: they gate nothing, and are a victory lap after completing an area. **[DECIDED]** An area's 4 Lost Legends open as soon as that area's 36 other fish are caught; this replaces waiting for all 288 (owner, 2026-11-16).
 
-**[DECIDED] Straight Fire is the victory-lap strain:** under a pond's Straight Fire, every rarity in that pond can bite, with boosted odds and boosted sale value.
+**[DECIDED] Straight Fire is the victory-lap strain:** under a pond's Straight Fire, every rarity in that pond from Common to Legendary can bite, with boosted odds and boosted sale value. Lost Legends come only from their own route (below), never from Straight Fire (decided 2026-11-16).
 
 ### Smoking & the Chill Meter
 

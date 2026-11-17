@@ -1,12 +1,12 @@
 # Fish Database & Spawn Tables
 
-> **Status**: In Review (revised after the 2026-11-16 third review, awaiting a fresh re-review)
+> **Status**: Approved 2026-11-16 (fourth review, lean)
 > **Author**: owner + design-system skill
 > **Last Updated**: 2026-11-16
 > **Last Verified**: 2026-11-16
 > **Implements Pillar**: Pillar 3 (Real Fish, Real Places, Pun Names); Pillar 1 (The High Is the Progression)
 > **Creative Director Review (CD-GDD-ALIGN)**: SKIPPED 2026-11-16 — lean mode
-> **Independent review**: 2026-11-16, lean, NEEDS REVISION (3 blockers, since fixed: random source as an input, catch result reports the flag spent, load checks and knob ranges). Recommended items fixed: ACs for tier 2, tier 4 and edge cases (AC-31 to AC-37). **Re-review 2026-11-16, lean, NEEDS REVISION** (2 blockers, since fixed: partial-data loading with AC-1 rewritten, closed species-tag list as rule 9). Also fixed: request contract (Bite Timing assembles it), co-op uses the guest's own inputs, four-state wording and refusal when not Ready, Straight Fire excludes Lost Legends (owner decision), AC-38 to AC-41. **Third review 2026-11-16, lean, NEEDS REVISION** (2 blockers, since fixed: a Pond record with an area and a load check as rule 10; the YAK LOCK bonus is paid only at effective tier 3 or 4, owner decision). Also fixed: the open rarity set is fixed and unopened weights are rejected (rule 6), draw order defined, a Lost Legend is never a trophy (rule 7, Formula 4), a request for an unknown pond is refused, AC-26 rewritten, AC-35 and AC-36 widened, AC-42 to AC-44. Still open: systems-index dependency rows (Pond & Area Travel, Lost Legends, HUD), Gear doc's tag-list wording, brief wording update, Tuning Knobs table (advisory).
+> **Independent review**: 2026-11-16, lean, NEEDS REVISION (3 blockers, since fixed: random source as an input, catch result reports the flag spent, load checks and knob ranges). Recommended items fixed: ACs for tier 2, tier 4 and edge cases (AC-31 to AC-37). **Re-review 2026-11-16, lean, NEEDS REVISION** (2 blockers, since fixed: partial-data loading with AC-1 rewritten, closed species-tag list as rule 9). Also fixed: request contract (Bite Timing assembles it), co-op uses the guest's own inputs, four-state wording and refusal when not Ready, Straight Fire excludes Lost Legends (owner decision), AC-38 to AC-41. **Third review 2026-11-16, lean, NEEDS REVISION** (2 blockers, since fixed: a Pond record with an area and a load check as rule 10; the YAK LOCK bonus is paid only at effective tier 3 or 4, owner decision). Also fixed: the open rarity set is fixed and unopened weights are rejected (rule 6), draw order defined, a Lost Legend is never a trophy (rule 7, Formula 4), a request for an unknown pond is refused, AC-26 rewritten, AC-35 and AC-36 widened, AC-42 to AC-44. **Fourth review 2026-11-16, lean, APPROVED.** Since done: systems-index dependency rows (Pond & Area Travel, Lost Legends, HUD), the Gear doc's tag-list wording, the brief's Straight Fire wording, and a Tuning Knobs table (advisory).
 
 ## Summary
 
@@ -21,6 +21,12 @@ The Fish Database is the game's catalogue of everything a cast can bring up: 320
 The player never sees this system directly. They feel it as the reason a Pumpkinseed turns up sober and a Landlocked Atlantic Salmon only turns up on Top Shelf, as the weight on the catch banner, and as the occasional old boot. Without it there is no collection to fill and nothing for a strain to unlock: it is where Pillar 1 ("which fish you can hook comes from the strain, never from money or gear") is enforced, and where Pillar 3's real fish and real places are stored.
 
 It is a data-and-rules system. It holds no per-player state and draws nothing on screen. Whether the data ships as JSON or as Godot resource files is an architecture decision and is not settled here.
+
+## Player Fantasy
+
+*Drawn from the Overview and Pillars 1 and 3; no new design decision.*
+
+The player should feel like a collector working through real waters. Each new strain opens fish they could not hook before; every catch has a real name and a real weight on the banner; a fish missing from the log turns up a little sooner than one already in it; and now and then the line brings up an old boot. Rarer fish come from smoking better, never from spending more or buying gear (Pillar 1), and every fish is a real species from a real place (Pillar 3).
 
 ## Detailed Design
 
@@ -293,6 +299,21 @@ The catch_weight formula is defined as:
 
 **Change to the systems index needed:** the index lists six systems depending on this one. This doc adds Lost Legends, Pond & Area Travel, Gear & Item Database (already listed) and the HUD as direct or soft dependents. Chill Meter & Smoking is a contract, not a dependency (above).
 
+## Tuning Knobs
+
+Every value below lives in the data file; none is written in code (data rule 5). A value outside its safe range fails the load check (data rule 8), naming the knob.
+
+| Knob | Start | Safe range | What it changes | Source |
+|---|---|---|---|---|
+| `base_weight[tier][r]` | Formula 1 table | 1–100 for each opened rarity; none for an unopened one (rules 6 and 8) | How often each rarity bites under a tier before the Chill bonus | Formula 1; the browser sketch's values, untuned |
+| Boost flag per tier and rarity | bold cells in Formula 1's table | on or off, opened rarities only | Which rarities the Chill state lifts | Formula 1 |
+| `state_bonus` | 0.3 | 0.05–1.0 | Extra weight per Chill state above the first, for boosted rarities | Formula 1 |
+| `new_entry_bias` | 2 | 1–5 | How much likelier an unlogged entry is (1 turns the catch-up rule off) | Formula 2; owner decision 2026-11-16 |
+| `lure_bias_cap` | 3 | 1–4 | The most any lure may multiply an entry by; Gear sets each lure's bias under it | Formula 2 |
+| `junk_chance` | 0.4 | 0–0.8 | Share of sober casts that bring up junk once the pond's Commons are logged | Formula 3 |
+| `weight_skew` | 1.6 | 1–3 | How strongly catches lean to the small end of a range; also lowers the trophy rate | Formula 4 |
+| `trophy_band` | 0.05 | 0.01–0.20 | The top share of a range that counts as a trophy (3.2% of catches at the starts) | Formula 4; owner decision 2026-11-16 |
+
 ## Visual/Audio Requirements
 
 Optional for an Economy system; kept short. *`art-director` not consulted — Lean mode.*
@@ -445,7 +466,7 @@ These are feel judgments and cannot be passed or failed by a test: does junk on 
 | 2 | **Weight ranges and tags for all 320 entries.** The content file lists names and rarities only. Only Lil' Puffin' Pond has ranges, in the sketch. | Owner and writer; North East's 40 first | Lil' Puffin' Pond before the MVP; the rest per area |
 | 3 | **Regional junk.** The owner chose shared junk plus regional junk; no regional items are written yet. | Owner and writer | North East before the Vertical Slice |
 | 4 | **Does a strain from another pond count as fully sober, junk included?** This doc assumes yes. | Strains & Unlock Chain doc | When that doc is written (10th) |
-| 5 | **Can a Lost Legend be caught again?** Settled 2026-11-16: Straight Fire does not include Lost Legends (they come only from the due flag), and the brief's "every rarity" wording needs updating. Whether a Legend can be caught again is still the Lost Legends doc's. | Lost Legends doc; owner updates the brief | When that doc is written (28th) |
+| 5 | **Can a Lost Legend be caught again?** Settled 2026-11-16: Straight Fire does not include Lost Legends (they come only from the due flag), and the brief's wording was updated the same day. Whether a Legend can be caught again is still the Lost Legends doc's. | Lost Legends doc; owner updates the brief | When that doc is written (28th) |
 | 6 | **JSON or Godot resource files?** | Architecture decision | Technical Setup |
 | 7 | **Feasibility is unchecked.** `docs/engine-reference/godot/modules/` has no scripting or data reference, so this design was not checked against the pinned engine. | Technical director | Technical Setup |
 | 8 | **No performance budget.** There is nothing to test a roll's cost against. | Owner, via `/project-settings` | Before the first build |
