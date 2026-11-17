@@ -136,3 +136,30 @@ Reviewed-Content-Hash: design/gdd/gear-item-database.md 6a79e0d13d6c0c35587ef5e3
 Reviewed-Content-Hash: design/gdd/systems-index.md 80ee3f1b4f4879e9c77fcb4ab33636caae806bb6
 Reviewed-Content-Hash: design/art/art-bible.md 4acf62dd6dd561cdd0470a8d195238df1c7f39e3
 Reviewed-Content-Hash: design/gdd/day-night-sleep.md f67d4bd3ec83e4a6e13c8e101395dcc48d083cf7
+
+## Review — 2026-11-17 — Verdict: APPROVED
+Review mode: lean · Workflow: standard
+Scope signal: L
+Specialists: none (lean)
+Blocking items: 0 | Recommended: 5
+Summary: Sixth review and the first with no blocker. The fifth review's blocker (an unconfirmed display mode could be saved) and all six of its recommended items are verified fixed in the text, with AC-60 to AC-63 covering them. Every formula example and numeric AC recomputes (Formulas 1 to 7, AC-3 to AC-5, AC-13, AC-17, AC-32 to AC-38, AC-52, AC-56, AC-60 to AC-63), the registry values match (5, 480, 853, 75 vertical), and Brightness, Vertex wobble and CRT agree with Retro Rendering. The five recommended items are clarifications; the first touches Player Controller's AC-5. The header was set to Approved with this entry (the index row already read Approved).
+Prior verdict resolved: Yes (fifth-review blocker and its 6 recommended items verified applied)
+Findings:
+- [RECOMMENDED] Edge Cases (a binding already held when Gameplay begins) vs Player Controller rule 2 / AC-5: the rule has no stated scope; read literally it covers W held across a phone close, while Player Controller requires walking to resume that frame. State that it covers button actions only and that the axis move reads its current value; add an AC.
+- [RECOMMENDED] Edge Cases (disconnect and focus loss): the "press any key" overlay is not a context and the resuming input is not said to be consumed, so Space could start a cast charge on resume; AC-30 covers only reconnecting. Specify consumption, held-until-released, and add an AC.
+- [RECOMMENDED] Rule 8 (Field of view row) with Player Controller OQ4: the unit is not stated; the registry and Player Controller fix it as vertical. Owner decision on the label.
+- [RECOMMENDED] Rules 8 and 19 / Edge Cases: "leaving Settings by choice during the countdown reverts" cannot occur (the dialog is modal and menu / ui_cancel choose Revert only). Reword.
+- [RECOMMENDED] Dependencies (bidirectional check): the row list omits index row 24 (Save/Load, which lists Settings & Input as soft).
+- [NICE] Display mode and Window size mean nothing under the Steam Deck's gamescope; Frame cap Unlimited with VSync On and Window size in Borderless fullscreen are undefined; Player Fantasy and Tuning Knobs absent (advisory).
+Reviewed-Content-Hash: design/gdd/settings-input.md 0f032a90fc24a0a36d05b600229aa6faf9bcc60f
+Reviewed-Content-Hash: design/registry/entities.yaml 5b3f643852b53ba064bb4a5e38ab9a0b7a6b6abf
+Reviewed-Content-Hash: .claude/skills/design-review/SKILL.md 4dcc8b81162613c757144532f1b72708ab3ba27f
+Reviewed-Content-Hash: design/gdd/game-concept.md 9575fa3b8e721823c815dd1750d82b8b10b89eaf
+Reviewed-Content-Hash: design/game-brief.md 50dc6ce5ae4283ef7b7c16414c96c2d32d2db647
+Reviewed-Content-Hash: design/gdd/gear-item-database.md f9d9b9f73b1190e8a437c8834d85179cce575957
+Reviewed-Content-Hash: design/gdd/systems-index.md 81f51e83e177d2e3b8eb689c0eebef897e43739e
+Reviewed-Content-Hash: design/art/art-bible.md c672bb8db5ffd7853f2ae61cd9ea87fccffe2492
+Reviewed-Content-Hash: design/gdd/day-night-sleep.md d1cb6f473bab9174ff38dd428610c191aaefd203
+Reviewed-Content-Hash: design/gdd/save-load.md a45ffeb3848986459010d95696027ac9fac7c1a7
+Reviewed-Content-Hash: design/gdd/retro-rendering.md 681d8deebf030d3fb3f51cd19185b91d465ef184
+Reviewed-Content-Hash: design/gdd/player-controller.md 793585eaf318d56602d430d3398fa3e2557daa51

@@ -1,6 +1,6 @@
 # Player Controller
 
-> **Status**: Designed 2026-11-17 (`/design-system`, guided, lean); not yet reviewed
+> **Status**: In Review (first `/design-review` 2026-11-17: NEEDS REVISION, 1 blocker (the stuck rule), fixed the same day with 8 of the 9 recommended items; the ninth, Settings & Input's status mismatch, is noted in Dependencies; re-review pending)
 > **Creative Director Review (CD-GDD-ALIGN)**: skipped — Lean mode
 > **Author**: owner + Claude (design-system, lean review)
 > **Last Updated**: 2026-11-17
@@ -9,7 +9,7 @@
 
 ## Summary
 
-Player Controller is the player's first-person body and camera: walking in the shack and on the dock, and paddling the kayak with free look on the pond. It turns the `move` and `look` inputs into calm, weighty movement copied from the browser sketch the owner played, gives every other system the one aim line it needs (where the player is looking), and places the player at wake-up and on a load. It owns the kayak's base speed and tip threshold that kayak gear adds to, and a soft, cost-free capsize for co-op bumps.
+Player Controller is the player's first-person body and camera: walking in the shack and on the dock, and paddling the kayak with free look on the pond. It turns the `move` and `look` inputs into calm, weighty movement copied from the browser sketch the owner played, gives every other system the one aim line it needs (where the player is looking), and places the player at wake-up and on a load. It owns the kayak's base speed and tip threshold that kayak gear adds to, and a soft capsize for co-op bumps that costs no items.
 
 > **Quick reference** — Layer: `Core` · Priority: `MVP` · Key deps: `Settings & Input (hard); Gear & Item Database, Scene Flow & Loading, Multiplayer (soft)`
 
@@ -31,7 +31,7 @@ Every number below is a **starting value, untuned**, defined with its range in F
 
 2. **Movement runs only in the Gameplay context** (Settings & Input rule 6). Outside it, `move` and `look` read as zero: the camera holds still, an on-foot body stops (Formula 1) and a coasting kayak slows under its own drag (Formula 4). Nothing is queued: a key held when Gameplay comes back counts from that moment. In solo, `game_time_paused` stops this system's physics step altogether (Settings & Input rule 17); the kayak freezes where it is and resumes at the same speed.
 
-3. **The camera sits at eye height**: `eye_height_foot_m` on foot, `eye_height_kayak_m` above the water in the kayak (the sketch's 1.15 m, a seated paddler). It never clips into a wall or the kayak; on foot the body capsule keeps the eye `camera_wall_margin_m` from any wall.
+3. **The camera sits at eye height**: `eye_height_foot_m` on foot, `eye_height_kayak_m` above the water in the kayak (the sketch's 1.15 m, a seated paddler). It never clips into a wall or the kayak; on foot the body capsule's radius (0.3 m) is the eye's distance from any wall, so there is no separate wall-margin value.
 
 4. **Field of view comes from Settings & Input** (60–100°, default 75°) and is **vertical**, the engine's default for a camera that keeps its height. A vertical value keeps the number of internal lines per degree the same at 16:9, 16:10 and 21:9, so the water band the player sees at casting range, which Retro Rendering's 3:1 shade gap is measured on, does not change with the window shape. It is applied on the frame the setting changes, in every context including Settings, so the player sees the change while choosing it. (The sketch used 72° vertical, about 105° horizontal at 16:9, and the owner said it felt great.)
 
@@ -51,7 +51,7 @@ Every number below is a **starting value, untuned**, defined with its range in F
 
 10. **The kayak is paddled with `move`: forward and back, and turn.** `move.y` paddles toward the kayak's heading (back-paddling is slower, `reverse_ratio`); `move.x` turns the kayak's heading at `kayak_turn_rate_deg` per second at full tilt, even from a standstill. Speed does not depend on how hard the player holds a key beyond the length of `move`. The kayak's velocity eases toward the wanted velocity (Formula 4), so it carves through a turn and coasts to a stop after the paddle stops, rather than turning on the spot with a fixed speed. A diagonal key press (W with A) gives about 0.7 of each axis (Settings & Input Formula 1), so turning while paddling is slower and gentler than either alone; this is intended and is a playtest question (Open Questions).
 
-11. **Free look in the kayak** (owner decision 2026-11-17). The camera's yaw is the kayak's heading plus a `head_yaw`. `look` changes only `head_yaw`, clamped to ±`head_turn_max_deg`; at the limit the view stops and the kayak does not follow. Turning the kayak (rule 10) carries the view with it, as the head is turned relative to the body. The player can therefore scan the shade to either side while the kayak drifts or holds, and cast where they look. `head_yaw` is 0 on boarding and is never recentred automatically (Open Questions).
+11. **Free look in the kayak** (owner decision 2026-11-17). The camera's yaw is the kayak's heading plus a `head_yaw`. `look` changes only `head_yaw`, clamped to ±`head_turn_max_deg`; at the limit the view stops and the kayak does not follow. Turning the kayak (rule 10) carries the view with it, as the head is turned relative to the body. The player can therefore scan the shade to either side while the kayak drifts or holds, and cast where they look. `head_yaw` is 0 on boarding and is never recentred automatically (Open Questions). **The hull and bow are drawn on the kayak, not on the camera** (owner decision 2026-11-17, design review): they turn with the heading, so a head turned away from the bow sees the hull's edge to one side, and the bow always shows which way `move.y` paddles. The rod and paddle are held, so they follow the view (Visual/Audio Requirements).
 
 12. **Sway.** The kayak's view rocks gently: a small slow bob on the water and a roll that grows with speed (Formula 7). Both are purely visual, never touch `aim_ray` (rule 6), and are multiplied by one `sway_scale` (1.0), a hook for the camera-bob accessibility slider that Settings & Input deferred.
 
@@ -61,7 +61,7 @@ Every number below is a **starting value, untuned**, defined with its range in F
 
 **Boarding, disembarking and placing**
 
-15. **Getting in.** On the dock the kayak waits at its berth. `interact` on it (Interaction owns the prompt) starts Scene Flow's push-off cutscene; at its end the player is in the kayak at the pond's `launch_point` facing the launch heading, with `head_yaw` 0 and velocity 0.
+15. **Getting in.** On the dock the kayak waits at its berth. `interact` on it (Interaction owns the prompt) starts Scene Flow's push-off cutscene (until Scene Flow exists, this system's own `placeholder_fade_s` fade, with `move`, `look` and `interact` dropped by this system itself); at its end the player is in the kayak at the pond's `launch_point` facing the launch heading, with `head_yaw` 0 and velocity 0. `at_berth` is false at that moment, because `launch_point` is authored clear of the berth (Reference values).
 
 16. **Getting out.** `at_berth` is true when the kayak is within `berth_radius_m` of its berth and slower than `berth_max_speed_mps` (Formula 8). While it is true, Interaction offers "get out" on `interact` ("paddling back to the dock prompts E to get out", brief). Choosing it starts a short climb-out transition owned by Scene Flow; at its end the player is on foot at the dock's `disembark_point` and the kayak is tied at its berth.
 
@@ -73,7 +73,7 @@ Every number below is a **starting value, untuned**, defined with its range in F
 
 19. **A push over the tip threshold capsizes the kayak.** The threshold is `tip_resistance_base` plus the equipped kayak's `tip_resistance` (Gear & Item Database; the Rental adds 0), through the same stacking as every stat (Formula 6). A push at or below it only moves the kayak.
 
-20. **A capsize is a soft, funny setback and costs nothing** (Pillar 2). For `capsize_duration_s` the view dips to the waterline and input is ignored; then the player is righted where they are, heading kept, velocity 0, and **cannot be capsized again for `capsize_grace_s`**, so a friend cannot chain-tip. The fish on the stringer, the Cooler, the strains and the gear are untouched. A catch in progress is lost like any failed catch (Casting & Tangle and Reel-in Needle reel in and report it; their rules decide the rest). Multiplayer may change what a capsize looks like or adds, not that it costs nothing.
+20. **A capsize is a soft, funny setback and costs no items and no money** (Pillar 2). For `capsize_duration_s` the view dips to the waterline and input is ignored; then the player is righted where they are, heading kept, velocity 0, and **cannot be capsized again for `capsize_grace_s`**, so a friend cannot chain-tip. The fish on the stringer, the Cooler, the strains and the gear are untouched. A catch in progress is lost like any failed catch (Casting & Tangle and Reel-in Needle reel in and report it; their rules decide the rest). That loss is the one thing a capsize can cost, and it stands (owner decision 2026-11-17, design review). Multiplayer may change what a capsize looks like or adds, not that it costs no items.
 
 **Co-op**
 
@@ -84,10 +84,10 @@ Every number below is a **starting value, untuned**, defined with its range in F
 | State | Entered by | Live actions | What the body does |
 |---|---|---|---|
 | **On foot** | `place(point)`; the end of Disembarking | `move`, `look` | Walks (rules 7 to 9) |
-| **Boarding** | `interact` on the kayak at the dock | none (Cutscene / Loading context) | Held while Scene Flow plays the push-off; at its end placed at `launch_point` |
+| **Boarding** | `interact` on the kayak at the dock | none (this system drops input itself; once Scene Flow exists its Cutscene / Loading context also holds it) | Held while Scene Flow plays the push-off (at MVP, the `placeholder_fade_s` fade); at its end placed at `launch_point` |
 | **Kayak** | the end of Boarding; the end of Capsized | `move`, `look` | Paddles, turns, looks (rules 10 to 14) |
 | **Capsized** | a push over the tip threshold while in the kayak | none | Dunked for `capsize_duration_s`, then righted |
-| **Disembarking** | `interact` while `at_berth` | none (Cutscene / Loading context) | Held while Scene Flow plays the climb-out; at its end placed at `disembark_point` |
+| **Disembarking** | `interact` while `at_berth` | none (as Boarding) | Held while Scene Flow plays the climb-out (at MVP, the `placeholder_fade_s` fade); at its end placed at `disembark_point` |
 
 | From | To | Trigger |
 |---|---|---|
@@ -244,7 +244,7 @@ The push_tip formula is defined as:
 
 **Output Range:** a push either capsizes the kayak or changes its velocity by at most `bump_velocity_cap_mps`; a capsize sets velocity to 0.
 **Example (provisional, impulse = closing speed):** a Rental at 4.5 m/s hits a stopped Rental: impulse 4.5 ≤ 5.0, **no capsize**; the other kayak is nudged 4.0 m/s (the cap). Two Rentals head-on at 4.5 m/s each: closing 9 > 5, **both capsize**. A Pedal at 6.0 hitting a stopped Rental: 6 > 5, **the Rental capsizes**; hitting a stopped Sit-on-Top: 6 ≤ 6.5, **no capsize**.
-**Boundaries:** `tip_resistance_base` 12 makes the Rental untippable by bumping (the fastest two kayaks can close at with shipped data is 12, so this is the "off" setting for bumps); 2 makes any bump tip. An impulse of 0 changes nothing. A huge impulse capsizes and its size no longer matters; the cap exists so a bad value can never fling a kayak that does not tip. The numbers are provisional until Multiplayer defines how an impulse is computed.
+**Boundaries:** `tip_resistance_base` 12 makes the Rental untippable by bumping **with shipped data** (the fastest two kayaks close at 6 + 6 = 12, and a bump is never above the threshold); it is not a guaranteed "off", because a kayak thrown past `v_max` (Edge Cases) or a faster future kayak can close faster than 12. 2 makes any bump tip. An impulse of 0 changes nothing. A huge impulse capsizes and its size no longer matters; the cap exists so a bad value can never fling a kayak that does not tip. The numbers are provisional until Multiplayer defines how an impulse is computed.
 
 ### Formula 7: Kayak sway
 
@@ -296,14 +296,14 @@ Not formulas, but quantities Core Rules state. They live in the same config reso
 |---|---|---|---|
 | `eye_height_foot_m` | 1.6 m | 1.4–1.8 | Rule 3 |
 | `eye_height_kayak_m` | 1.15 m above the water (the sketch's) | 0.8–1.5 | Rule 3 |
-| `camera_wall_margin_m` | 0.15 m | 0.1–0.3 | Rule 3 |
-| Body capsule | radius 0.3 m, height 1.7 m | radius 0.25–0.4 | Rules 7, 9 |
+| Body capsule | radius 0.3 m, height 1.7 m | radius 0.25–0.4 | Rules 3, 7, 9 (its radius is the camera's distance from any wall) |
 | `step_height_m` | 0.3 m | 0.2–0.4 | Rule 9 |
 | `floor_max_angle_deg` | 40° | 30–50 | Rule 9 |
 | `kayak_radius_m` | 0.8 m (a circle on the water plane) | 0.5–1.2 | Rule 14, Edge Cases |
-| `stuck_timeout_s` | 2.0 s | 1–5 | Edge Cases (on foot) |
+| `stuck_timeout_s` | 2.0 s | 1–5 | Edge Cases (on foot; how long the wedged test must hold) |
+| `placeholder_fade_s` | 0.5 s (to black and back) | 0.2–1.0 | Boarding and Disembarking until Scene Flow exists; the stuck placement |
 
-`launch_point`, `disembark_point`, the berth marker and the bed's `place` point are placed in each scene, not tuned.
+`launch_point`, `disembark_point`, the berth marker and the bed's `place` point are placed in each scene, not tuned. Each `launch_point` is authored more than `berth_radius_m × berth_exit_factor` (3.75 m at the defaults) from its berth marker, so `at_berth` is false the moment boarding ends; the scene check in AC-31 verifies it.
 
 ## Edge Cases
 
@@ -316,7 +316,7 @@ Not formulas, but quantities Core Rules state. They live in the same config reso
 - **If a `move` key is still held when Gameplay returns**: it counts from that frame (rule 2); no movement from the time away is replayed.
 - **If Gameplay returns after the mouse was released** (a context exit, regained window focus): the first frame of `look` after the return is discarded, so a cursor re-capture can never swing the view.
 - **If the window loses focus or the gamepad disconnects in co-op**: no pause happens (Settings & Input rule 17), input reads zero, and the body stops or the kayak coasts as above.
-- **If the field of view changes at 100°**: the camera's near plane (0.05 m) and `camera_wall_margin_m` keep walls from clipping at the widest setting. Changing the window's shape never changes the vertical field of view (rule 4).
+- **If the field of view changes at 100°**: the camera's near plane (0.05 m) and the capsule radius (at least 0.25 m) keep walls from clipping at the widest setting: at 21:9 the near plane's half-width is 0.05 × tan 50° × 2.33 = 0.14 m, less than the capsule's. Changing the window's shape never changes the vertical field of view (rule 4).
 
 **The kayak**
 
@@ -341,7 +341,7 @@ Not formulas, but quantities Core Rules state. They live in the same config reso
 **On foot**
 
 - **If two players on foot meet**: they pass through each other. Bodies on foot do not collide, so nobody can block a doorway or the dock. Kayaks do collide, because the bump is the fun (rule 18).
-- **If the body is wedged** (a bad collider, or an object a bug left in a doorway) **and `move` has been held for `stuck_timeout_s` without the body moving 0.05 m**: the player is placed at the scene's default place point (the shack door), so a player on foot can never be softlocked.
+- **If the body is wedged**: *wedged* means the body capsule overlaps solid geometry it cannot depenetrate from, or all four horizontal directions relative to the body (forward, back, left, right) are blocked at once (a bad collider, or an object a bug left in a doorway). Pressing `move` against a wall, rail or dock edge is **not** wedged: one free direction is enough, so a player leaning on a rail with `move` held for any length of time stays where they are. When the wedged test has held continuously for `stuck_timeout_s` (the timer resets on any frame it fails), the player is placed at the scene's default place point (the shack door) through the same `placeholder_fade_s` fade as a `place`, so a player on foot can never be softlocked and the camera never cuts (design review 2026-11-17).
 - **If a step is taller than `step_height_m` or a slope steeper than `floor_max_angle_deg`**: the body cannot climb it, so it is a wall. Scenes are authored so no walkable route needs one (rule 9); a scene check verifies it (Acceptance Criteria).
 - **If the frame rate drops**: movement runs on the fixed physics step, so speeds and stopping distances do not change. At 6 m/s a step moves the kayak 0.1 m, less than `kayak_radius_m`, so it cannot pass through a post.
 
@@ -351,9 +351,9 @@ Not formulas, but quantities Core Rules state. They live in the same config reso
 
 | System | Hard / Soft | Interface | Without it |
 |---|---|---|---|
-| Settings & Input (`design/gdd/settings-input.md`, Approved) | Hard | `move`, `look` (its Formulas 1 to 3); field of view; the active input context; `game_time_paused` | Nothing moves; there is no input |
+| Settings & Input (`design/gdd/settings-input.md`; its own header says In Review, re-review pending, while the systems index lists it Approved: reconcile) | Hard | `move`, `look` (its Formulas 1 to 3); field of view; the active input context; `game_time_paused` | Nothing moves; there is no input |
 | Gear & Item Database (`design/gdd/gear-item-database.md`, Approved) | Soft | The equipped kayak's `paddle_speed` and `tip_resistance`; `stat_value` (its Formula 1) | Every kayak behaves as the Rental |
-| Scene Flow & Loading (Vertical Slice, not designed) | Soft | Plays the push-off and climb-out; calls `place` on a load or arrival | At MVP, Boarding and Disembarking are an instant fade and placement |
+| Scene Flow & Loading (Vertical Slice, not designed) | Soft | Plays the push-off and climb-out; calls `place` on a load or arrival | At MVP this system plays its own `placeholder_fade_s` fade (0.5 s to black and back) and drops `move`, `look` and `interact` itself; Scene Flow's cutscenes replace it |
 | Multiplayer (Alpha, not designed) | Soft | `apply_push(impulse_mps, source)`; when a guest is placed | Solo: nothing is pushed and nothing tips |
 
 **Downstream (other systems depend on this):**
@@ -380,8 +380,8 @@ Not formulas, but quantities Core Rules state. They live in the same config reso
 *Specialist lens: `art-director` not consulted. Lean mode, and this is a Core system whose view the player looks through rather than reads. Review manually before production.*
 
 **In view**
-- **In the kayak** the player sees the bow and the rod, as in the sketch, plus a chunky two-blade paddle that dips on alternating sides while there is thrust. Its stroke rate follows `target_speed`, and it is still while coasting or held. One shape, one memorable feature (art bible Principle 1).
-- **Nothing in the kayak covers the water a cast can reach** (Principle 3, Read the Water First). At pitch 0 no part of the bow, rod or paddle is drawn higher than 15° below the centre of the view. The shortest cast lands 5 m out (the sketch's `cast_min`, Casting & Tangle's to confirm), which is 13° down from a 1.15 m eye, so the water from there outward is never covered.
+- **In the kayak** the player sees the bow and hull, drawn on the kayak so they turn with its heading (rule 11), plus the rod as in the sketch and a chunky two-blade paddle that dips on alternating sides while there is thrust; the rod and paddle are held, so they follow the view. Its stroke rate follows `target_speed`, and it is still while coasting or held. One shape, one memorable feature (art bible Principle 1).
+- **Nothing in the kayak covers the water a cast can reach** (Principle 3, Read the Water First). At pitch 0, and at any `head_yaw`, no part of the bow, hull, rod or paddle is drawn higher than 15° below the centre of the view. The shortest cast lands 5 m out (the sketch's `cast_min`, Casting & Tangle's to confirm), which is 13° down from a 1.15 m eye, so the water from there outward is never covered.
 - **On foot no body is drawn**: no hands, arms or feet. Other players see a body; that is Multiplayer and art bible Section 5 (deferred). Other kayaks follow the art bible's silhouette: a long lozenge hull, an upright torso and one diagonal rod line.
 - **Capsize**: the view tips toward the water and dips below the waterline into flat pond colour for most of `capsize_duration_s`, then rises as the kayak rights. No flash, no red, nothing that reads as a failure (Pillar 2).
 - **Sway and vertex wobble**: paddling makes the PS1 vertex shimmer show (Retro Rendering's edge case). That is the intended look; this system adds nothing on top.
@@ -405,7 +405,8 @@ Not formulas, but quantities Core Rules state. They live in the same config reso
 **Response budgets**
 - **Look**: applied on the same rendered frame as the input, with no smoothing (Formula 2). Nothing in this system adds a frame.
 - **Move**: responds on the next physics step (16.7 ms at 60 Hz). Walking reaches two-thirds speed in 0.1 s and stops in 0.25 m, so walking up to the fridge or the Tackle Box never overshoots.
-- **No snap anywhere**: no state change moves the camera without a fade, except a capsize, which is a dip, not a cut.
+- **No snap anywhere**: no state change moves the camera without a fade, except a capsize, which is a dip, not a cut. The stuck placement fades too (Edge Cases).
+- **Smooth above 60 Hz**: physics runs at 60 Hz, but the camera must not. Heading, body yaw and position are shown interpolated (the engine's 3D physics interpolation, or integration per rendered frame; the ADR in Open Question 5 picks), so a 90°/s turn on a 144 Hz display shows 144 distinct yaw values a second, not 60 repeated pairs (AC-36).
 
 **Comfort**: no head bob on foot; kayak roll capped at 3.5°; one `sway_scale` for the deferred camera-bob slider; the vertical field of view runs from 60° to 100°.
 
@@ -415,6 +416,7 @@ Not formulas, but quantities Core Rules state. They live in the same config reso
 3. Is 90°/s the right kayak turn rate, and is ±90° of head turn enough to scan the shade?
 4. Is 2.5 m/s walking pleasant on the trips between shack and dock, or a chore by day 3?
 5. Is the 3.1° roll comfortable over a 30-minute session?
+6. With the head turned 90° off the bow, is the hull's edge enough to know which way W paddles, or does the player still lose their heading?
 
 ## UI Requirements
 
@@ -442,7 +444,7 @@ Physics runs at the project's default 60 Hz. Numbers are checked to ±2% unless 
 - **AC-1** (Logic, Formula 1) — **GIVEN** a player on foot at rest with defaults, **WHEN** `move` is (0, 1) for 0.1 s, **THEN** speed is 1.58 m/s; **WHEN** held for 0.3 s, **THEN** 2.38 m/s; **WHEN** held for 2 s, **THEN** 2.50 m/s and never more.
 - **AC-2** (Logic, Formula 1) — **GIVEN** a player walking at 2.5 m/s, **WHEN** `move` becomes zero, **THEN** the body travels 0.25 m (±0.02) more and its speed is exactly 0 within 0.6 s.
 - **AC-3** (Logic, rule 7) — **GIVEN** a player on foot, **WHEN** `move` is (1, 0), then (0, −1), then (0.707, 0.707), **THEN** each settles at 2.5 m/s, sideways, backward and diagonal respectively, relative to the body's facing; **WHEN** `move` is (0, 0.5), **THEN** it settles at 1.25 m/s.
-- **AC-4** (Integration, rule 8) — **GIVEN** a player on foot on the dock, **WHEN** every Gameplay action in Settings & Input rule 1 is pressed and held in turn, **THEN** the body's height never changes and no state other than On foot is entered except by `interact` on the kayak.
+- **AC-4** (Integration, rule 8) — **GIVEN** a player on foot on the dock, **WHEN** every Gameplay action in Settings & Input rule 1 is pressed and held in turn, **THEN** the body's height never changes and no state other than On foot is entered, except Boarding by `interact` while the player faces the kayak.
 - **AC-5** (Integration, rule 2) — **GIVEN** a player walking at 2.5 m/s, **WHEN** the phone opens, **THEN** the body stops within 0.27 m, the camera does not move while the mouse moves, and **WHEN** the phone closes with W still held, **THEN** walking resumes from that frame.
 
 **Look and camera (rules 3 to 6, 11; Formula 2)**
@@ -462,12 +464,12 @@ Physics runs at the project's default 60 Hz. Numbers are checked to ±2% unless 
 - **AC-15** (Logic, Formula 3) — **GIVEN** a kayak at rest, **WHEN** `move.x` is −1 for 2 s, **THEN** the heading has turned 180° left and the position has not changed; **WHEN** `move` is (−0.707, 0.707), **THEN** the heading turns at 63.6°/s.
 - **AC-16** (Logic, rule 13) — **GIVEN** Casting & Tangle and the capsize each hold the paddle, **WHEN** Casting & Tangle releases its hold, **THEN** thrust is still ignored; **WHEN** the capsize ends, **THEN** all holds are cleared and `move.y` 1 paddles. While any hold is up, `move.x` still turns the kayak and `look` still turns the view.
 - **AC-17** (Logic, Formula 5) — **GIVEN** a kayak at 4.5 m/s, **WHEN** it meets the bank at 45°, **THEN** its speed after contact is 3.18 m/s along the bank; **WHEN** head-on, **THEN** 0, with no velocity away from the bank (no bounce).
-- **AC-18** (Integration, edge case) — **GIVEN** a kayak paddled into the tightest corner of Lil' Puffin' Pond's bank and dock, **WHEN** `move.x` is held either way for 2 s, then `move.y` −1 for 3 s, **THEN** the kayak is free of every contact.
+- **AC-18** (Integration, edge case) — **GIVEN** a kayak paddled into the tightest corner of Lil' Puffin' Pond's bank and dock, **WHEN** `move.x` is held either way for 2 s, then `move.y` −1 for 3 s, **THEN** the kayak reports 0 contacts on the final frame.
 - **AC-19** (Logic, edge case) — **GIVEN** the frame cap at 30, 60 and Unlimited, **WHEN** the AC-12 and AC-13 runs are repeated, **THEN** the distances match within 1%.
 
 **Getting in, out and placed (rules 15 to 17; Formula 8)**
 
-- **AC-20** (Integration, rule 15) — **GIVEN** a player on foot facing the kayak at the dock, **WHEN** `interact` is pressed, **THEN** the state goes Boarding then Kayak, and the kayak is at `launch_point` facing the launch heading with `head_yaw` 0 and speed 0. (At MVP, before Scene Flow exists, Boarding is a fade of under 1 s.)
+- **AC-20** (Integration, rule 15) — **GIVEN** a player on foot facing the kayak at the dock, **WHEN** `interact` is pressed, **THEN** the state goes Boarding then Kayak, and the kayak is at `launch_point` facing the launch heading with `head_yaw` 0 and speed 0, and `at_berth` is false. (At MVP, before Scene Flow exists, Boarding is the `placeholder_fade_s` fade of 0.5 s, and `move`, `look` and `interact` read zero during it.)
 - **AC-21** (Logic, Formula 8) — **GIVEN** a Rental coasting from 4.5 m/s with the paddle released 5.7 m from its berth, **WHEN** it reaches 3.0 m out, **THEN** `at_berth` turns true; **WHEN** it then drifts to 3.5 m out at 1.0 m/s, **THEN** it stays true; at 3.8 m out, **THEN** false. A kayak at 2.0 m out moving at 2.0 m/s reads false.
 - **AC-22** (Integration, rule 16) — **GIVEN** `at_berth` is true, **WHEN** `interact` is pressed, **THEN** the state goes Disembarking then On foot at `disembark_point`, and the kayak is at its berth.
 - **AC-23** (Logic, rule 17) — **GIVEN** a capsized kayak at 3 m/s with two holds up and `head_yaw` 60°, **WHEN** `place(bed)` is called, **THEN** the player is On foot at the bed's point and facing, speed 0, pitch 0, `head_yaw` 0, no hold, no capsize, and the kayak is at its berth.
@@ -479,7 +481,7 @@ Physics runs at the project's default 60 Hz. Numbers are checked to ±2% unless 
 - **AC-26** (Logic, Formula 6) — **GIVEN** a Rental at rest, **WHEN** `apply_push` is 4.5 m/s, **THEN** no capsize and its speed becomes 4.0 m/s (the cap); **WHEN** 5.0 m/s, **THEN** no capsize; **WHEN** 5.01 m/s, **THEN** it capsizes. With the Sit-on-Top the threshold is 6.5 m/s; with the Pedal, 8.0 m/s.
 - **AC-27** (Logic, rule 20) — **GIVEN** a capsize begins, **WHEN** 3.0 s pass, **THEN** the player is back in Kayak at the same position and heading with speed 0, and the stringer, Cooler, strains and gear are unchanged item for item; **WHEN** a 20 m/s push arrives 3.9 s after righting, **THEN** no capsize (the nudge applies, capped at 4.0 m/s); at 4.1 s, **THEN** it capsizes.
 - **AC-28** (Logic, edge cases) — **GIVEN** a Rental at rest, **WHEN** pushes of 3 m/s east and 3 m/s north arrive in the same step, **THEN** the tip test sees 4.24 m/s (no capsize); **WHEN** two pushes of 3 m/s east arrive together, **THEN** it sees 6 m/s and capsizes. Pushes during a capsize, on foot, boarding or disembarking change nothing.
-- **AC-29** (Integration, rule 18) — **GIVEN** a solo game, **WHEN** a full day is played with the kayak rammed into every bank, post and rock, **THEN** no capsize ever happens.
+- **AC-29** (Integration, rule 18) — **GIVEN** a solo game and a scripted driver, **WHEN** the kayak is paddled at full speed into each class of collider (bank, dock, post, rock) from 8 headings each, **THEN** the state is never Capsized and `apply_push` is never called.
 
 **Visual (Formula 7)**
 
@@ -487,10 +489,18 @@ Physics runs at the project's default 60 Hz. Numbers are checked to ±2% unless 
 
 **Scenes and safety (rule 9; edge cases)**
 
-- **AC-31** (Integration, rule 9) — **GIVEN** the home scene, **WHEN** a scripted walker holds `move` into every edge of the shack, porch, path and dock for 10 s each, **THEN** the body never enters the water or leaves the walkable area, and every walkable route has no step over 0.3 m and no slope over 40°.
-- **AC-32** (Integration, edge case) — **GIVEN** a player wedged so the body cannot move, **WHEN** `move` is held for 2.0 s, **THEN** they are placed at the shack door's point.
+- **AC-31** (Integration, rule 9) — **GIVEN** the home scene, **WHEN** a scripted walker holds `move` into every edge of the shack, porch, path and dock for 10 s each, **THEN** the body never enters the water or leaves the walkable area, and every walkable route has no step over 0.3 m and no slope over 40°. The same scene check verifies that every `launch_point` is more than `berth_radius_m × berth_exit_factor` (3.75 m) from its berth marker. The walker is not placed at the shack door during the 10 s hold (AC-32).
+- **AC-32** (Integration, edge case) — **GIVEN** a test collider that leaves the body overlapping solid geometry it cannot leave, **WHEN** the wedged test holds for 2.0 s, **THEN** the player is placed at the shack door's point through the 0.5 s fade. **GIVEN** a player on foot against a rail or wall with one direction free, **WHEN** `move` is held into it for 10 s, **THEN** no placement happens and the body has not moved. **WHEN** the wedged test fails on any frame before 2.0 s, **THEN** the timer restarts.
 - **AC-33** (Integration, edge case) — **GIVEN** two players on foot in co-op, **WHEN** one walks into the other in the shack doorway, **THEN** they pass through each other.
 - **AC-34** (Logic, performance) — **GIVEN** four players' controllers running on the host, **WHEN** profiled on the Steam Deck for 60 s of paddling, **THEN** this system's work averages under 0.2 ms per physics step (starting budget, to confirm in the first Godot profile).
+
+**Added by the design review (2026-11-17)**
+
+- **AC-35** (Visual, rule 11) — **GIVEN** a kayak at rest at pitch 0, **WHEN** `head_yaw` is 0, +90° and −90°, **THEN** retained screenshots show the bow in view at 0° and the hull's edge on the matching side at ±90°, and at all three nothing is drawn higher than 15° below the centre of the view. **WHEN** the kayak turns 90° with `head_yaw` held at +90°, **THEN** the hull moves in view with the heading.
+- **AC-36** (Visual + Logic, Game Feel) — **GIVEN** the display at 144 Hz, **WHEN** `move.x` −1 is held in the kayak for 1 s and the camera yaw is sampled every rendered frame, **THEN** there are at least 140 distinct values and each step is 0.625° (±5%), not 60 repeated pairs. **GIVEN** walking at 2.5 m/s, **THEN** the camera position changes on every rendered frame.
+- **AC-37** (Integration, rule 20) — **GIVEN** a catch in progress, **WHEN** a capsize begins, **THEN** Casting & Tangle is told (a fake consumer until it exists) and the catch ends as failed; the stringer, Cooler, strains and gear are unchanged item for item.
+- **AC-38** (Logic, audio events) — **GIVEN** a player walking 7 m on the dock at 2.5 m/s, **THEN** `footstep` fires 10 times (±1) carrying the dock-wood surface.
+- **AC-39** (Logic, rule 14) — **GIVEN** a kayak at a steady 4.5 m/s, **WHEN** it is driven through a lily-pad patch and a reed bed, **THEN** no `hull_contact` event fires and its speed does not change.
 
 **Gaps found by the `qa-lead` lens**
 - Rule 21 (the co-op player state) has no criterion that can run before Multiplayer exists; AC-28 and AC-33 test the rules locally. Multiplayer's GDD must add the replicated version.
@@ -503,10 +513,10 @@ Physics runs at the project's default 60 Hz. Numbers are checked to ±2% unless 
 | # | Question | Owner | Resolve by |
 |---|---|---|---|
 | 1 | **Free look or look-steers.** The owner chose free look with A/D turning (2026-11-17) over the sketch's model. Playtest questions 1 and 3 in Game Feel decide whether it stays. | Owner | First Godot playtest |
-| 2 | **Recentring.** Should `head_yaw` drift back toward the bow while paddling forward? It never recentres now (rule 11). | Owner | First Godot playtest |
+| 2 | **Recentring.** Should `head_yaw` drift back toward the bow while paddling forward? It never recentres now (rule 11); the hull drawn on the kayak is the heading cue instead (owner decision 2026-11-17), and Game Feel question 6 tests whether it is enough. | Owner | First Godot playtest |
 | 3 | **Diagonal keys in the kayak.** W with A gives 0.7 of each (Settings & Input Formula 1). Keep it, or let the kayak read its two keyboard axes unnormalised? The second option is a change to Settings & Input. | Owner, with Settings & Input | First Godot playtest |
 | 4 | **The field of view is vertical** (rule 4). At 16:9 the Settings range of 60–100° is about 92–130° horizontal (the 75° default is about 108°), and players often expect horizontal numbers. Should the Settings row say "vertical", or change its range? | Owner, with Settings & Input | Before the Settings screen is built |
-| 5 | **How the kayak is built.** A kinematic body on a flat water plane (what the formulas assume) or a physics body in Jolt; and whether to use the engine's 3D physics interpolation, which was rebuilt in 4.5 and is not in `docs/engine-reference/godot/`, so the camera is smooth on displays above 60 Hz. NOT SOURCEABLE from the engine reference. | Technical director (`/architecture-decision`) | Before the first Player Controller story |
+| 5 | **How the kayak is built.** A kinematic body on a flat water plane (what the formulas assume) or a physics body in Jolt; and whether to use the engine's 3D physics interpolation (rebuilt in 4.5; the engine reference only notes the move to `SceneTree` with the API unchanged, so how it behaves for a kayak and a camera is NOT SOURCEABLE there) or per-frame integration, so the camera is smooth on displays above 60 Hz (Game Feel, AC-36). It must be decided with the ADR. | Technical director (`/architecture-decision`) | Before the first Player Controller story |
 | 6 | **Pushes and capsizes in co-op.** How an impulse is computed from a collision, a deliberate "tip a friend" action, and what a capsize looks like to others. Formula 6's numbers are provisional until then. | Multiplayer GDD | Multiplayer design (Alpha) |
 | 7 | **Do Drunk or YAK LOCKED change movement?** This GDD gives neither a hook. If either wants one, it adds a named modifier here. | Hunger, Munchies & Drunk; Chill Meter & Smoking GDDs | When those GDDs are written |
 | 8 | **Four berths per dock and a guest join point** (Edge Cases). Every dock needs four berth markers and a join point; no GDD places a joining guest yet. | Level design; Multiplayer | Before the Vertical Slice dock is built |

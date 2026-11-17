@@ -33,28 +33,16 @@ Task:
 <!-- /STATUS -->
 
 <!-- CHECKPOINT -->
-- Task: Player Controller GDD, 2026-11-17 (/design-system, guided, lean, standard workflow; 7th in design order)
-- Status: Complete, Designed (CD-GDD-ALIGN skipped, lean); NOT yet reviewed -> /design-review design/gdd/player-controller.md in a FRESH session
-- Sections: Summary, Overview, Detailed Design (rules 1-21, states, interactions), Formulas (8 + reference values), Edge Cases, Dependencies, Visual/Audio, Game Feel, UI Requirements (none), Cross-References, Acceptance Criteria (AC-1..34 + 4 qa gaps), Open Questions (9)
-- Done 2026-11-17 (owner-approved): registry +2 (paddle_max_base 4.5, tip_resistance_base 5.0) + stat_value referenced_by, validate clean (36); index row 1 Designed + soft deps Scene Flow, Multiplayer, tracker 7 started / MVP 6/19; Gear kayak ladder filled + its OQ3 closed; Save/Load downstream row for PC
-- Open: OQ4 FOV vertical vs Settings row wording; OQ5 kayak body + physics interpolation ADR before first story; OQ6 impulse/capsize (Multiplayer); OQ8 four berths + guest join point. Next in design order: Interaction (E) (8th)
-- Owner decisions 2026-11-17: kayak = free look (head_yaw +-90, A/D turns kayak 90 deg/s); on foot strafe, no jump/sprint/crouch; tip/bump here, provisional (capsize 3 s, nothing lost, 4 s grace); kayak steps Sit-on-Top +0.75 m/s / +1.5 tip, Pedal +1.5 / +3.0 (base 4.5 m/s, tip 5.0). FOV is vertical
-- Context read: S&I (move/look/FOV contracts, pitch clamp is ours), Gear (paddle_speed, tip_resistance bases are ours; Gear OQ3 wants numbers), DNS (wake in bed, kayak back to dock), Save/Load (position never saved), RR (camera + FOV are ours; cast_max 30 m provisional), sketch (accel 5, max 4.5 m/s, drag 1.1, turn 1.7 rad/s). Engine gaps: kayak-on-water physics not sourceable (ADR flag), interpolation 4.5 (MEDIUM)
-- Task: Save/Load (Repack) GDD, 2026-11-17 (/design-system, guided, lean; same session as the RR re-review)
-- Status: Complete, Designed (CD-GDD-ALIGN skipped, lean); NOT yet reviewed -> /design-review design/gdd/save-load.md in a FRESH session
-- File: design/gdd/save-load.md. Sections: Summary, Overview, Detailed Design (rules 1-18, states, interactions), Formulas (2), Edge Cases, Dependencies, Visual/Audio, Game Feel, UI Requirements, Cross-References, Acceptance Criteria (AC-1..25), Open Questions (4)
-- Owner decisions 2026-11-17: 3 slots; saves only at wake-up + Turn & Burn (quit request outside overnight/load = Turn & Burn); load mid-day saves into the pond's shack; guest records by Steam ID in host's save, first join = starting kit + empty log; guest_record_cap 24 (least-recent last_seen_s removed); play time = running time, 1 s/frame cap
-- Done: registry +2 (save_slot_count 3, guest_record_cap 24; validate clean); index row 24 Designed + tracker (6 started, VS 1/6)
-- Open: OQ1 world vs player sections (Inventory, Economy, Deliveries, Travel); OQ2 Steam Cloud/offline; OQ3 guest progress home (1.0); OQ4 save format ADR. Settings & Input should list Save/Load as soft dependent (quit requests). UX flag: slot list + save notices
-- Task: second /design-review of Retro Rendering, 2026-11-17 (lean, guided; fresh session; branch setup/studio-template)
-- Verdict: APPROVED, 0 blockers, 3 recommended; all 10 first-review findings verified resolved; every worked number recomputed and reproduces
-- Recommended (3), applied AFTER approval, not re-reviewed: load check C >= 3.03 (quant_margin 0.03), AC-12 capture times, rule 15 gap match. Nice-to-haves and detail: retro-rendering.md review log
-- Files: retro-rendering.md (Approved + 3 fixes), review log, systems-index row 6 Approved + tracker, registry shade_gap_min note
-- Mismatch noticed: settings-input.md header says In Review, index row 4 says Approved (S&I session's call)
-- Still open in GDD: OQ2 (engine prototype + ADR), 4, 6, 7, 8. sunrise_hour / night_start_hour still unregistered (DNS's job)
-- Next, in FRESH sessions: pending re-reviews of settings-input.md and day-night-sleep.md; then /design-system Save/Load (Repack) (6th)
-- Gate: Concept -> Systems Design is CONCERNS; stage still Concept
-- Git: nothing committed. Uncommitted: retro-rendering.md (+review log), settings-input.md (+log), day-night-sleep.md (+log), art-bible.md, engine-reference rendering.md, systems index, registry, this file
+- Task: Interaction (E) GDD, 2026-11-17 (/design-system, guided, lean, standard workflow; 8th in design order)
+- Status: Complete, Designed (CD-GDD-ALIGN skipped, lean); NOT yet reviewed -> /design-review design/gdd/interaction.md in a FRESH session
+- File: design/gdd/interaction.md. Sections: Summary, Overview, Detailed Design (rules 1-15, states, interactions), Formulas (3 + reference values), Edge Cases, Dependencies, Visual/Audio, Game Feel, UI Requirements (UX flag), Cross-References, Acceptance Criteria (AC-1..24 + 5 qa gaps), Open Questions (8)
+- Owner decisions 2026-11-17: sphere cast along aim_ray (0.12 m), reach 2.0 m, prompt = glyph + verb + name plus object tint, each owner answers usable + text (no locking). Claude defaults, unconfirmed: no aiming in the kayak (Get out whenever at_berth), use_lockout_s 0.25, reach_exit_factor 1.1, highlight_strength 0.25
+- Done: index row 2 Designed + rows 14, 19, 25 list Interaction (soft) + tracker (8 started, MVP 7/19). Registry: no cross-system values to register
+- Open: OQ1 per-object tint parameter in Retro Rendering; OQ2 no In Bed state in Player Controller (co-op bed); OQ3 Get out near the dock; OQ6 network request (Multiplayer); OQ7 DNS lists Interaction hard, here soft. UX flag: the prompt
+- Earlier today: Player Controller APPROVED (2nd review, 0 blockers, 8 recommended open: design/gdd/reviews/player-controller-review-log.md)
+- Consistency check on Interaction: PASS 2026-11-17 (0 conflicts, 37 registry entries; 2 wrong Retro Rendering formula citations fixed in interaction.md)
+- Next: /review-all-gdds in a FRESH session (first run, 8 GDDs, about 455 KB; deferred on purpose). Then /design-review design/gdd/interaction.md in a fresh session; then Fishing Log & Unc (9th)
+- Git: nothing committed
 <!-- /CHECKPOINT -->
 
 ---
@@ -161,3 +149,4 @@ Task:
 <!-- CONSISTENCY-CHECK: 2026-11-17 | GDDs checked: 6 | Conflicts found: 0 | Log: docs/consistency-failures.md -->
 
 <!-- CONSISTENCY-CHECK: 2026-11-17 | GDDs checked: 7 | Conflicts found: 0 | Log: docs/consistency-failures.md -->
+<!-- CONSISTENCY-CHECK: 2026-11-17 | GDDs checked: 8 | Conflicts found: 0 (1 wrong citation in interaction.md fixed) | Log: docs/consistency-failures.md -->
