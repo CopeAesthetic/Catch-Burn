@@ -171,6 +171,24 @@ formulas:
     added: 2026-11-16
     revised: ""
 
+  - name: stat_value
+    status: active
+    source: design/gdd/gear-item-database.md
+    referenced_by:
+      - design/gdd/gear-item-database.md
+    variables:
+      - base
+      - flat
+      - percent
+      - pct_floor
+      - pct_cap
+      - factor
+    output_range: [0, 999]
+    expression: "max(0, base + sum(flat)) * clamp(1 + sum(percent), 1 + pct_floor, 1 + pct_cap) * product(factor)"
+    notes: "How gear changes any stat another system owns. Flats add, percents add (owner decision 2026-11-16), factors (smoking item, mask) multiply. Each gameplay system supplies its own base."
+    added: 2026-11-16
+    revised: ""
+
 # Example:
 #
 # formulas:
@@ -274,9 +292,43 @@ constants:
     source: design/gdd/fish-database-spawn-tables.md
     referenced_by:
       - design/gdd/fish-database-spawn-tables.md
+      - design/gdd/gear-item-database.md
     value: 3
     unit: multiplier
     notes: "The most a lure may multiply an entry's pick weight. Gear and Item Database owns the per-lure sizes under this cap."
+    added: 2026-11-16
+    revised: ""
+
+  - name: pct_floor
+    status: active
+    source: design/gdd/gear-item-database.md
+    referenced_by:
+      - design/gdd/gear-item-database.md
+    value: -0.5
+    unit: summed percent
+    notes: "Lowest the summed percent modifiers on one stat may reach: no gear combination more than halves a stat (owner decision 2026-11-16). Data range -0.9 to 0."
+    added: 2026-11-16
+    revised: ""
+
+  - name: pct_cap
+    status: active
+    source: design/gdd/gear-item-database.md
+    referenced_by:
+      - design/gdd/gear-item-database.md
+    value: 1.0
+    unit: summed percent
+    notes: "Highest the summed percent modifiers on one stat may reach: no gear combination more than doubles a stat (owner decision 2026-11-16). Data range 0 to 3."
+    added: 2026-11-16
+    revised: ""
+
+  - name: gas_mask_factor
+    status: active
+    source: design/gdd/gear-item-database.md
+    referenced_by:
+      - design/gdd/gear-item-database.md
+    value: 2
+    unit: multiplier
+    notes: "The Gas Mask doubles both chill_per_hit and grams_per_hit of the equipped smoking item (brief, Smoking section). Chill Meter and Smoking owns each strain's base."
     added: 2026-11-16
     revised: ""
 

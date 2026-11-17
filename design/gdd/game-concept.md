@@ -25,7 +25,7 @@ A late-2000s / early-2010s fishing sim (*Rapala Pro Bass Fishing* 2010, *Bass Pr
 | **Player Count** | Single-player, with 2–4 player drop-in co-op added after the single-player game |
 | **Session Length** | **[PROPOSED]** 30–60 minutes: two or three in-game days. A day lasts about 15–20 minutes from sunrise to midnight (owner decision 2026-11-16; a starting value to tune) |
 | **Monetization** | Premium on Steam, cheap (friendslop pricing). Price not set |
-| **Estimated Scope** | **[PROPOSED]** Large (9+ months) for a solo developer: 30 systems, 32 ponds, 320 fish. No timeline has been set |
+| **Estimated Scope** | **[PROPOSED]** Large (9+ months) for a solo developer: 30 systems, 32 ponds, 320 fish. Only the MVP has a date: target 2027-02-14 (see Scope Tiers) |
 | **Comparable Titles** | *Rapala Pro Bass Fishing* (2010), *Bass Pro Shops: The Strike* (2009), *Lethal Company*, *R.E.P.O.*, *PEAK*. Sales figures not researched |
 
 Mature content: drug use, 18+. The Steam Content Survey is answered honestly.
@@ -47,7 +47,7 @@ It's like a 2000s budget fishing game, **and also** getting high is the progress
 Supporting hooks:
 
 - The BioShock 2-style needle gauge replaces the line-tension bar every old fishing game used.
-- Real fish, real lakes and real regional strains, all pun-named; the hidden tier is real extinct and folklore fish, so it reads as history.
+- Real fish, real lakes and real regional strains, all pun-named; the hidden tier is real extinct fish and local legends (nine of the legends are not yet verified; see Open Questions).
 - A working 2008 flip phone is the whole menu system.
 
 ---
@@ -112,7 +112,7 @@ Strengths are **[PROPOSED]**. Relaxation leads this game (see the aesthetics tab
 - **Onboarding curve**: taught by doing. **[PROPOSED]** The first minute ends on a guaranteed first catch, as the browser sketch did. The first strain arrives after the first sleep.
 - **Difficulty scaling**: rarer fish mean a faster needle, smaller zones and more pulls. Gear modifies all of these.
 - **Feedback clarity**: FISH ON runs red to green as the fish comes in; the log fills; new strains and ponds unlock by name.
-- **Recovery from failure**: every failure is soft. A lost fish costs seconds; a blackout or a drift-off costs the carried catch, never the save.
+- **Recovery from failure**: every failure is soft. A lost fish costs seconds; a drift-off at midnight spoils whatever is not in The Drop Box to the Quick Sell price; a blackout loses the carried fish and the Cooler. Neither ever costs the save.
 
 ---
 
@@ -125,10 +125,10 @@ Paddle to shade, hold Space to cast, wait about 2–5 s, hit Space inside 1.5 s 
 A day on the water: fish, smoke to reach the next rarity, eat before the Munchies max out, and get the catch into The Drop Box before midnight.
 
 ### Session-Level (30-120 minutes)
-A pond: Commons → Reggie → Uncommons → Home Grown → Rares → Top Shelf → Epic and Legendary. With all nine species logged, buy the next pond's picture on the shack Map.
+A pond: Commons → Reggie → Uncommons → Home Grown → Rares → Top Shelf → Epic and Legendary. With all nine of the pond's fish logged, buy the next pond's picture on the shack Map. (A log entry is one species in one pond, so a Bluegill in two ponds is two entries: see `design/gdd/fish-database-spawn-tables.md`.)
 
 ### Long-Term Progression
-Four ponds make an area; all 36 species in an area unlock the next area's plane ticket from Joe. Completing an area also opens that area's four Lost Legends as a victory lap, each unlocking a Straight Fire strain (owner decision 2026-11-16; this replaces waiting for all 288). Eight areas in all.
+Four ponds make an area; all 36 log entries in an area unlock the next area's plane ticket from Joe. Completing an area also opens that area's four Lost Legends as a victory lap, each unlocking a Straight Fire strain (owner decision 2026-11-16; this replaces waiting for all 288). Eight areas in all.
 
 ### Retention Hooks
 - **Curiosity**: the next rarity, the next pond's fish, the "???" rows in Unc's log.
@@ -262,6 +262,7 @@ All fish, strains, gear and food live in data files, never hard-coded.
 ### Scope Risks
 - 320 fish and 8 regional shacks for one developer.
 - 30 design documents before production.
+- The MVP target (2027-02-14, about 13 weeks at 20 hours a week) has to cover 18 more MVP design documents as well as the Godot build. Only one MVP system (Fish Database) is designed so far.
 
 ### Open Questions
 - Nine of the 32 Lost Legends are labelled folklore in the content file and none has been verified as an existing local legend. Pillar 3 requires each to be verified or replaced.
@@ -282,7 +283,7 @@ All fish, strains, gear and food live in data files, never hard-coded.
 2. Shade sweet spots on a day and night clock.
 3. Strains, the Chill Meter, and Hunger → Munchies.
 4. Fish and gear data, inventory, prices, and The Drop Box with overnight payout.
-5. The record of which species you have caught, which the strain unlocks read.
+5. The record of which log entries you have caught, which the strain unlocks read.
 6. A stand-in order screen at the dock for buying from The Guy and for Quick Sell (owner decision 2026-11-16). It is a placeholder; the Flip Phone replaces it in the Vertical Slice.
 7. The HUD and catch banner, in the retro look.
 
@@ -311,6 +312,7 @@ Only the MVP has a target date. The later tiers are not set.
 - [x] Art bible sections 1–4 (`design/art/art-bible.md`)
 - [x] Decompose the concept into systems (`design/gdd/systems-index.md`)
 - [x] Review this concept (`/design-review`, 2026-11-16: NEEDS REVISION, revised the same day)
+- [x] Re-review the revision (`/design-review`, 2026-11-16: APPROVED; six wording fixes applied after)
 - [ ] Re-run `/gate-check systems-design`
-- [ ] Design each system (`/design-system [system-name]`), starting with Fish Database & Spawn Tables
+- [ ] Design each system (`/design-system [system-name]`). Fish Database & Spawn Tables is designed and In Review; Gear & Item Database is next
 - [ ] Build the vertical slice in Pre-Production (`/vertical-slice`)
