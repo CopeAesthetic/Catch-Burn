@@ -33,6 +33,13 @@ Task:
 <!-- /STATUS -->
 
 <!-- CHECKPOINT -->
+- Task: Player Controller GDD, 2026-11-17 (/design-system, guided, lean, standard workflow; 7th in design order)
+- Status: Complete, Designed (CD-GDD-ALIGN skipped, lean); NOT yet reviewed -> /design-review design/gdd/player-controller.md in a FRESH session
+- Sections: Summary, Overview, Detailed Design (rules 1-21, states, interactions), Formulas (8 + reference values), Edge Cases, Dependencies, Visual/Audio, Game Feel, UI Requirements (none), Cross-References, Acceptance Criteria (AC-1..34 + 4 qa gaps), Open Questions (9)
+- Done 2026-11-17 (owner-approved): registry +2 (paddle_max_base 4.5, tip_resistance_base 5.0) + stat_value referenced_by, validate clean (36); index row 1 Designed + soft deps Scene Flow, Multiplayer, tracker 7 started / MVP 6/19; Gear kayak ladder filled + its OQ3 closed; Save/Load downstream row for PC
+- Open: OQ4 FOV vertical vs Settings row wording; OQ5 kayak body + physics interpolation ADR before first story; OQ6 impulse/capsize (Multiplayer); OQ8 four berths + guest join point. Next in design order: Interaction (E) (8th)
+- Owner decisions 2026-11-17: kayak = free look (head_yaw +-90, A/D turns kayak 90 deg/s); on foot strafe, no jump/sprint/crouch; tip/bump here, provisional (capsize 3 s, nothing lost, 4 s grace); kayak steps Sit-on-Top +0.75 m/s / +1.5 tip, Pedal +1.5 / +3.0 (base 4.5 m/s, tip 5.0). FOV is vertical
+- Context read: S&I (move/look/FOV contracts, pitch clamp is ours), Gear (paddle_speed, tip_resistance bases are ours; Gear OQ3 wants numbers), DNS (wake in bed, kayak back to dock), Save/Load (position never saved), RR (camera + FOV are ours; cast_max 30 m provisional), sketch (accel 5, max 4.5 m/s, drag 1.1, turn 1.7 rad/s). Engine gaps: kayak-on-water physics not sourceable (ADR flag), interpolation 4.5 (MEDIUM)
 - Task: Save/Load (Repack) GDD, 2026-11-17 (/design-system, guided, lean; same session as the RR re-review)
 - Status: Complete, Designed (CD-GDD-ALIGN skipped, lean); NOT yet reviewed -> /design-review design/gdd/save-load.md in a FRESH session
 - File: design/gdd/save-load.md. Sections: Summary, Overview, Detailed Design (rules 1-18, states, interactions), Formulas (2), Edge Cases, Dependencies, Visual/Audio, Game Feel, UI Requirements, Cross-References, Acceptance Criteria (AC-1..25), Open Questions (4)
@@ -41,10 +48,8 @@ Task:
 - Open: OQ1 world vs player sections (Inventory, Economy, Deliveries, Travel); OQ2 Steam Cloud/offline; OQ3 guest progress home (1.0); OQ4 save format ADR. Settings & Input should list Save/Load as soft dependent (quit requests). UX flag: slot list + save notices
 - Task: second /design-review of Retro Rendering, 2026-11-17 (lean, guided; fresh session; branch setup/studio-template)
 - Verdict: APPROVED, 0 blockers, 3 recommended; all 10 first-review findings verified resolved; every worked number recomputed and reproduces
-- On-screen check: 4x4 Bayer 5-bit simulation gives worst-case keys 3.04 / 3.10 / 3.06 (Formula 5: 3.05 / 3.12 / 3.06)
-- Recommended, applied AFTER approval (owner), not re-reviewed: (1) load check needs C >= gap_check 3.03 (quant_margin 0.03 for dither), floor k >= 0.92; (2) AC-12 times 06:00/13:30/20:59, "6 CRT-on captures"; (3) rule 15: untinted gap within region_gap_tolerance 0.05 of NE 3.47, Y_L within 0.005; AC-11 cases added
-- Nice-to-have open: Formula 1 "at most one" px; AC-7 w_night 0.5005 (use 1/3); Formula 8 dither_amp 1.5 wording; edge case "4 nearest" lights; Formula 2 sun-to-moon blend; hue drift; AC-19 waits on Multiplayer; Player Fantasy / Tuning Knobs
-- Files: retro-rendering.md (Status Approved + 3 fixes), review log (2nd entry, receipt of reviewed version), systems-index row 6 Approved + tracker approved 4 (counts S&I's Approved row), registry shade_gap_min note (validate clean)
+- Recommended (3), applied AFTER approval, not re-reviewed: load check C >= 3.03 (quant_margin 0.03), AC-12 capture times, rule 15 gap match. Nice-to-haves and detail: retro-rendering.md review log
+- Files: retro-rendering.md (Approved + 3 fixes), review log, systems-index row 6 Approved + tracker, registry shade_gap_min note
 - Mismatch noticed: settings-input.md header says In Review, index row 4 says Approved (S&I session's call)
 - Still open in GDD: OQ2 (engine prototype + ADR), 4, 6, 7, 8. sunrise_hour / night_start_hour still unregistered (DNS's job)
 - Next, in FRESH sessions: pending re-reviews of settings-input.md and day-night-sleep.md; then /design-system Save/Load (Repack) (6th)
@@ -152,3 +157,7 @@ Task:
 
 <!-- CONSISTENCY-CHECK: 2026-11-17 | GDDs checked: 6 | Conflicts found: 0 | Log: docs/consistency-failures.md -->
 - Consistency check 2026-11-17 (6 GDDs incl. save-load.md; PASS, 0 conflicts, 0 stale): registered sunrise_hour (constant 6.0) and night_start_hour (formula) with source day-night-sleep.md (owner OK); registry 30 entries, validate clean.
+
+<!-- CONSISTENCY-CHECK: 2026-11-17 | GDDs checked: 6 | Conflicts found: 0 | Log: docs/consistency-failures.md -->
+
+<!-- CONSISTENCY-CHECK: 2026-11-17 | GDDs checked: 7 | Conflicts found: 0 | Log: docs/consistency-failures.md -->

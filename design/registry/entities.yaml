@@ -176,6 +176,7 @@ formulas:
     source: design/gdd/gear-item-database.md
     referenced_by:
       - design/gdd/gear-item-database.md
+      - design/gdd/player-controller.md
     variables:
       - base
       - flat
@@ -572,6 +573,42 @@ constants:
     value: 20
     unit: game-time seconds
     notes: "The longest the midnight drift-off waits for a catch in progress to finish (Day, Night & Sleep rule 6, Formula 3). Data range 5-45. Counted in game time, so it stops while game_time_paused is true. A catch still going at the cap is cut off like any held action. Registered by /consistency-check 2026-11-17."
+    added: 2026-11-17
+    revised: ""
+
+  - name: paddle_max_base
+    status: active
+    source: design/gdd/player-controller.md
+    referenced_by:
+      - design/gdd/player-controller.md
+      - design/gdd/gear-item-database.md
+    value: 4.5
+    unit: m/s
+    notes: "Top speed of the Rental Kayak (Player Controller Formula 4; the browser sketch's paddle_max). Gear's flat paddle_speed adds to it: Rental 0, Sit-on-Top +0.75, Pedal +1.5, so 4.5 / 5.25 / 6.0 m/s (owner decision 2026-11-17). Data range 2.5-8.0."
+    added: 2026-11-17
+    revised: ""
+
+  - name: tip_resistance_base
+    status: active
+    source: design/gdd/player-controller.md
+    referenced_by:
+      - design/gdd/player-controller.md
+      - design/gdd/gear-item-database.md
+    value: 5.0
+    unit: m/s of push
+    notes: "The Rental Kayak's tip threshold: a co-op push larger than this capsizes it (Player Controller Formula 6, provisional until Multiplayer defines how a push is computed). Gear's flat tip_resistance adds to it: Rental 0, Sit-on-Top +1.5, Pedal +3.0, so 5.0 / 6.5 / 8.0 (owner decision 2026-11-17). Data range 2-12; solo never tips."
+    added: 2026-11-17
+    revised: ""
+
+  - name: field_of_view_deg
+    status: active
+    source: design/gdd/settings-input.md
+    referenced_by:
+      - design/gdd/settings-input.md
+      - design/gdd/player-controller.md
+    value: 75
+    unit: degrees, vertical
+    notes: "Player setting, range 60-100 (Settings & Input rule 8, Graphics tab); Player Controller applies it on the frame it changes. Vertical (Player Controller rule 4), so the internal lines per degree stay the same at every aspect: 75 is about 108 degrees horizontal at 16:9, and the range about 92-130. Whether the Settings row should say vertical is Player Controller Open Question 4. Registered by /consistency-check 2026-11-17."
     added: 2026-11-17
     revised: ""
 

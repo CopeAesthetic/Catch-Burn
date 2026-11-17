@@ -2,7 +2,7 @@
 
 > **Status**: Approved 2026-11-16 (third review, lean); recommended items and Open Question 1 settled after approval
 > **Author**: owner + design-system skill
-> **Last Updated**: 2026-11-16
+> **Last Updated**: 2026-11-17 (kayak ladder numbers from the Player Controller doc; Open Question 3 closed)
 > **Last Verified**: 2026-11-16
 > **Implements Pillar**: Pillar 1 (The High Is the Progression); Pillar 2 (Chill First, Never Punishing); Pillar 4 (Budget Charm)
 > **Creative Director Review (CD-GDD-ALIGN)**: SKIPPED 2026-11-16 — lean mode
@@ -237,7 +237,7 @@ Not a new formula: each ladder step carries one flat modifier, and only the best
 |---|---|---|
 | Cooler `stash_slots` | Lunchbox 4 → Hard-Side 6 → Marine 9 → "Big Chill" 12 | Content file |
 | Stringer `stringer_slots` | Rope 5 → Chain 8 → Wire Fish Basket 12 → Floating Livewell 18 | Owner-confirmed 2026-11-16 |
-| Kayak `paddle_speed`, `tip_resistance` (flat, units set by the Player Controller doc) | Rental (adds 0) → Sit-on-Top → Pedal | No numbers yet |
+| Kayak `paddle_speed` (m/s), `tip_resistance` (m/s of push), flat; units and bases in the Player Controller doc (base 4.5 m/s and 5.0) | Rental +0 / +0 → Sit-on-Top +0.75 / +1.5 → Pedal +1.5 / +3.0 (top speed 4.5 → 5.25 → 6.0 m/s; tip threshold 5.0 → 6.5 → 8.0) | Owner-confirmed 2026-11-17 (Player Controller Formulas 4 and 6; `tip_resistance` provisional until Multiplayer) |
 
 ## Edge Cases
 
@@ -431,7 +431,7 @@ Is a +10% step noticeable within a few catches; does the Dab Rig with the Gas Ma
 |---|---|---|---|
 | 1 | ~~**Stringer slots 5 → 8 → 12 → 18, and the Rope Stringer as a starter.**~~ **Closed 2026-11-16**: the owner confirmed both; the brief's starting kit now lists the Rope Stringer. | Owner | Done |
 | 2 | **Numbers for lines, lures and The Unc Stick.** The content file gives words ("line strength", "species bias", "all rod stats"). Lures also need their tags; only Topwater = bass is named. | Owner and content work | Starter items before the MVP; the rest before Jane (Alpha) |
-| 3 | **Kayak numbers** for `paddle_speed` and `tip_resistance`. | Owner, with the Player Controller doc | Rental Kayak before the MVP |
+| 3 | ~~**Kayak numbers** for `paddle_speed` and `tip_resistance`.~~ **Closed 2026-11-17**: the owner chose Sit-on-Top +0.75 m/s / +1.5 and Pedal +1.5 m/s / +3.0 with the Player Controller doc, which owns the bases (4.5 m/s, 5.0). | Owner, with the Player Controller doc | Done |
 | 4 | **Concentrate**: is it a separate item, or a version of each strain? Four smoking items need it. | Strains & Unlock Chain doc | When that doc is written (10th) |
 | 5 | **Cough stun**: the Scientific Bong reduces it, but the brief has no cough mechanic. Add one, or drop the line. | Owner, in the Chill Meter doc | When that doc is written |
 | 6 | **Food amounts**: small, medium, large and "full reset" need numbers. | Hunger, Munchies & Drunk doc | When that doc is written |

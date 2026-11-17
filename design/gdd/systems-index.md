@@ -2,7 +2,7 @@
 
 > **Status**: Draft
 > **Created**: 2026-11-16
-> **Last Updated**: 2026-11-17 (Day, Night & Sleep dependency rows added; Retro Rendering designed)
+> **Last Updated**: 2026-11-17 (Player Controller designed; Day, Night & Sleep dependency rows added; Retro Rendering designed)
 > **Source Concept**: design/gdd/game-concept.md (written from design/game-brief.md, which remains the detailed record)
 
 Review gates: TD-SYSTEM-BOUNDARY, PR-SCOPE and CD-SYSTEMS were skipped (lean review mode). They are not approvals.
@@ -75,7 +75,7 @@ This index was written before the game's five pillars were defined (they are now
 
 | # | System Name | Category | Priority | Status | Design Doc | Depends On |
 |---|-------------|----------|----------|--------|------------|------------|
-| 1 | Player Controller | Core | MVP | Not Started | — | Settings & Input; Gear & Item Database (soft) |
+| 1 | Player Controller | Core | MVP | Designed | design/gdd/player-controller.md | Settings & Input; Gear & Item Database (soft); Scene Flow & Loading (soft); Multiplayer (soft) |
 | 2 | Interaction (E) | Core | MVP | Not Started | — | Player Controller; Settings & Input; Day, Night & Sleep |
 | 3 | Day, Night & Sleep | Core | MVP | Approved | design/gdd/day-night-sleep.md | — (soft: Settings & Input; Scene Flow & Loading; Multiplayer) |
 | 4 | Settings & Input (inferred) | Core | MVP | Approved | design/gdd/settings-input.md | — (soft: Multiplayer; Scene Flow & Loading) |
@@ -151,7 +151,7 @@ Counts: 19 MVP · 6 Vertical Slice · 4 Alpha · 1 Full Vision.
 
 ### Core Layer (depends on foundation)
 
-1. Player Controller — depends on: Settings & Input; Gear (soft)
+1. Player Controller — depends on: Settings & Input; Gear (soft); Scene Flow & Loading (soft: the push-off and climb-out); Multiplayer (soft: pushes)
 2. Interaction (E) — depends on: Player Controller
 3. Scene Flow & Loading — depends on: Save/Load
 4. Shade Sweet Spots — depends on: Day, Night & Sleep; Retro Rendering
@@ -261,10 +261,10 @@ Chill Meter & Smoking (14) and Hunger, Munchies & Drunk (15) are designed back t
 | Metric | Count |
 |--------|-------|
 | Total systems identified | 30 |
-| Design docs started | 6 |
+| Design docs started | 7 |
 | Design docs reviewed | 6 |
 | Design docs approved | 6 |
-| MVP systems designed | 5/19 (counts corrected 2026-11-17 to include Day, Night & Sleep; Day, Night & Sleep: Designed 2026-11-17, lean; first design review 2026-11-17 NEEDS REVISION, 4 blockers (Formula 2 and AC-4 numbers, the grace's missing catch interface, no Paused path in the grace, the overnight cap), fixed the same day; Approved at the second review, 2026-11-17, lean, 0 blockers, 11 recommended items open (none of the first review's ten was applied); Retro Rendering: Designed 2026-11-17, lean; first design review 2026-11-17 NEEDS REVISION, 1 blocker (CRT darkening counted in the wrong colour space), fixed the same day with all 9 recommended items; Approved at the second review, 2026-11-17, lean, 0 blockers; its 3 recommended items (dither margin on the load check, AC-12 capture times, rule 15 gap match) applied after approval, not re-reviewed; Settings & Input: Designed 2026-11-16, lean; five design reviews, all NEEDS REVISION (the fifth, 2026-11-17, found 1 blocker, the unconfirmed display mode being saved; fixed the same day with six recommended items); Approved at the sixth review, 2026-11-17, lean, 0 blockers, 8 recommended items open (review log entry not yet written); Fish Database: Approved at the fourth review, 2026-11-16, lean, 0 blockers; index rows, brief wording and Tuning Knobs done after approval; later the same day, owner decisions added a missing-rarity Chill term, the YAK split knob, rule 11 and AC-45 to AC-49, not re-reviewed; Gear & Item Database: Approved at the third review, 2026-11-16, lean, 0 blockers; recommended items 1–4 and Open Question 1 settled after approval) |
+| MVP systems designed | 6/19 (Player Controller: Designed 2026-11-17, lean, not yet reviewed; owner decisions: free look in the kayak with A/D turning, strafe on foot, co-op tip and bump defined provisionally, kayak steps Sit-on-Top +0.75 m/s / +1.5 and Pedal +1.5 m/s / +3.0; counts corrected 2026-11-17 to include Day, Night & Sleep; Day, Night & Sleep: Designed 2026-11-17, lean; first design review 2026-11-17 NEEDS REVISION, 4 blockers (Formula 2 and AC-4 numbers, the grace's missing catch interface, no Paused path in the grace, the overnight cap), fixed the same day; Approved at the second review, 2026-11-17, lean, 0 blockers, 11 recommended items open (none of the first review's ten was applied); Retro Rendering: Designed 2026-11-17, lean; first design review 2026-11-17 NEEDS REVISION, 1 blocker (CRT darkening counted in the wrong colour space), fixed the same day with all 9 recommended items; Approved at the second review, 2026-11-17, lean, 0 blockers; its 3 recommended items (dither margin on the load check, AC-12 capture times, rule 15 gap match) applied after approval, not re-reviewed; Settings & Input: Designed 2026-11-16, lean; five design reviews, all NEEDS REVISION (the fifth, 2026-11-17, found 1 blocker, the unconfirmed display mode being saved; fixed the same day with six recommended items); Approved at the sixth review, 2026-11-17, lean, 0 blockers, 8 recommended items open (review log entry not yet written); Fish Database: Approved at the fourth review, 2026-11-16, lean, 0 blockers; index rows, brief wording and Tuning Knobs done after approval; later the same day, owner decisions added a missing-rarity Chill term, the YAK split knob, rule 11 and AC-45 to AC-49, not re-reviewed; Gear & Item Database: Approved at the third review, 2026-11-16, lean, 0 blockers; recommended items 1–4 and Open Question 1 settled after approval) |
 | Vertical Slice systems designed | 1/6 (Save/Load (Repack): Designed 2026-11-17, lean; first design review 2026-11-17 NEEDS REVISION, 3 blockers (wake-up save timing, shack vs pond, Settings quit path), fixed the same day with the recommended items; Approved at the second review, 2026-11-17, lean, 0 blockers, its 8 recommended items applied the same day with owner decisions; third review 2026-11-17, lean: Approved, 0 blockers, all 8 verified, 4 recommended items open; owner decisions: 3 slots, saves at wake-up and Turn & Burn (window close counts), guest records by Steam ID in the host's save) |
 
 ---

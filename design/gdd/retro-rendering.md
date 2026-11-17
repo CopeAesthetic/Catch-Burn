@@ -358,10 +358,10 @@ CRT, when on: `line_dark = min(crt_line_max, crt_mean_dark × max(scale, 1))`. I
 
 | System | Hard / Soft | Interface | Without it |
 |---|---|---|---|
-| Day, Night & Sleep (`design/gdd/day-night-sleep.md`, In Review) | Soft | `time_of_day`, `phase`; the phase-boundary hours `dawn_end_hour`, `dusk_start_hour`, `night_start_hour` | The Day key and a noon sun |
+| Day, Night & Sleep (`design/gdd/day-night-sleep.md`, Approved) | Soft | `time_of_day`, `phase`; the phase-boundary hours `dawn_end_hour`, `dusk_start_hour`, `night_start_hour` | The Day key and a noon sun |
 | Settings & Input (`design/gdd/settings-input.md`, In Review) | Soft | Brightness, Vertex wobble, CRT filter (its rule 8) | The defaults: 1.0, On, Off |
 | Casting & Tangle (not designed) | Soft | `cast_max_m` for Formula 4's fog constraint | The provisional 30 m |
-| Player Controller (not designed) | Soft | Camera transform and field of view | — (the camera always exists) |
+| Player Controller (`design/gdd/player-controller.md`, Designed) | Soft | Camera transform and field of view (vertical, its rule 4) | — (the camera always exists) |
 | Scene Flow & Loading (not designed) | Soft | The scene's light profile and region on load | Outdoor profile, North East |
 
 **Contracts this system owns that its dependents feed** (data flows in, but the dependency runs the other way, so the systems index has no cycle):
@@ -387,7 +387,7 @@ CRT, when on: `line_dark = min(crt_line_max, crt_mean_dark × max(scale, 1))`. I
 - Day, Night & Sleep lists Retro Rendering as a soft dependent for `time_of_day`, `phase` and the three phase-boundary hours (added there 2026-11-17), and that matches.
 - The systems index's row 6 listed only Settings & Input (soft). It now also lists Day, Night & Sleep (soft) and Casting & Tangle (soft).
 - Rows 7 (Shade Sweet Spots) and 11 (Chill Meter & Smoking) already list Retro Rendering.
-- Casting & Tangle, Player Controller, Scene Flow & Loading, Shade Sweet Spots, Chill Meter & Smoking and the HUD have no GDD yet. Each must list Retro Rendering when it is written.
+- Casting & Tangle, Scene Flow & Loading, Shade Sweet Spots, Chill Meter & Smoking and the HUD have no GDD yet. Each must list Retro Rendering when it is written. Player Controller (designed 2026-11-17) lists it as a soft dependent.
 
 ## Visual/Audio Requirements
 

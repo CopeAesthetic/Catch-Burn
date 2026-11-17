@@ -173,7 +173,7 @@ The play_time formula is defined as:
 
 | System | Hard / Soft | Interface | Without it |
 |---|---|---|---|
-| Day, Night & Sleep (`design/gdd/day-night-sleep.md`, In Review) | Hard | `day_number`, `time_of_day` (its rule 10); the new-day step that triggers the wake-up save; the overnight's start and end (rule 6); `game_time_paused` (Formula 2) | No wake-up save and no clock to save |
+| Day, Night & Sleep (`design/gdd/day-night-sleep.md`, Approved) | Hard | `day_number`, `time_of_day` (its rule 10); the new-day step that triggers the wake-up save; the overnight's start and end (rule 6); `game_time_paused` (Formula 2) | No wake-up save and no clock to save |
 | Gear & Item Database (`design/gdd/gear-item-database.md`, Approved) | Soft | Stable item ids, the retired flag, the starting kit (rule 13) | Item sections cannot be checked for retired ids |
 | Settings & Input (`design/gdd/settings-input.md`) | Soft | Quit requests and its rule 20 forced exit, which runs first, then the save (rule 5) | Window close exits without the forced-exit steps |
 
@@ -186,6 +186,7 @@ The play_time formula is defined as:
 | Multiplayer (Alpha, not designed) | Hard | The co-op state rules (rules 12–18): the host's save holds the session; guest records by Steam ID |
 | Inventory & Storage; Economy; Fishing Log & Unc; Strains & Unlock Chain; Chill Meter & Smoking; Hunger, Munchies & Drunk; Deliveries & Drop Box; Pond & Area Travel (not designed) | Hard | Register a world or player section (rule 9); stable ids only |
 | Flip Phone & FishMail (not designed) | Soft | Turn & Burn's save and its failure notice (rules 5, 10) |
+| Player Controller (`design/gdd/player-controller.md`, Designed) | Soft | Rule 7: no position is saved, so every load places the player in the pond's shack with the kayak at its berth (its `place`, rule 17). Added 2026-11-17 with the owner's approval, from the Player Controller doc's bidirectional check |
 
 **Bidirectional check** (2026-11-17):
 - Day, Night & Sleep lists Save/Load as a hard dependent for `day_number` and `time_of_day` (its Dependencies and rule 10), and that matches. It names Save/Load as owning "when a save can be made", which rules 5–7 now define.
